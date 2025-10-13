@@ -1,0 +1,108 @@
+<div class="increment-letter" style="font-family: 'Arial', sans-serif; max-width: 800px; margin: 0 auto; padding: 30px; position: relative;">
+    <!-- Company Header -->
+    <div style="position: absolute; opacity: 0.1; font-size: 120px; transform: rotate(-30deg); top: 30%; left: 10%; z-index: -1; font-weight: bold; color: #0d6efd;">
+        {{ company.name }}
+    </div>
+
+    <!-- Letterhead with decorative border -->
+    <div class="letter-header mb-4" style="border-bottom: 2px solid #0d6efd; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; gap: 3rem;">
+        <!-- Logo on the left -->
+        <div style="flex: 0 0 auto;">
+            <img src="{{ url_for('static', filename='images/' + company.logo) }}" 
+                 alt="{{ company.name }} Logo" 
+                 style="height: 150px; max-width: 400px; object-fit: contain;">
+        </div>
+        
+        <!-- Company info on the right -->
+        <div style="flex: 1; text-align: left;">
+            <div style="display: flex; justify-content: space-between;">
+                <p style="color: #555; font-size: 14px;">
+                    <strong>Office:</strong> {{ company.address }}<br>
+                    <strong>Phone:</strong> {{ company.phone }}<br>
+                    <strong>Email:</strong> {{ company.email }}<br>
+                    <strong>Website:</strong> {{ company.website }}<br>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    
+
+    <!-- Letter Title -->
+    <h2 class="text-center" style="color: #0d6efd; text-align: center; margin-bottom: 30px;">
+        Increment Letter
+    </h2>
+
+    <!-- Employee Details -->
+    <div style="margin-bottom: 20px;">
+        <p style="font-weight: bold; margin-bottom: 5px;">{{ data.full_name }}</p>
+        <p style="margin-top: 0;">EMP ID - {{ data.employee_id or 'Not Specified' }}</p>
+    </div>
+
+    <!-- Salutation -->
+    <p style="margin-bottom: 20px;">
+        Dear,
+    </p>
+
+    <!-- Letter Content -->
+    <div style="text-align: justify; line-height: 1.6; margin-bottom: 30px;">
+        <p>
+            You are aware of the recent salary appraisal/changes in the levels being planned. New levels and
+            corresponding titles are being introduced and you, along with all other employees, will be placed in the
+            new set.
+        </p>
+
+        <p>
+            Please be informed that your salary is incremented of <strong>Rs. {{ "{:,.2f}".format((data.ctc|float)/12) }} per month</strong>, 
+            positioned at <strong>{{ data.designation }}</strong>, effective from 
+            <strong>
+                {% if data.joining_date %}
+                    {{ data.joining_date.strftime('%d') }}{% if data.joining_date.strftime('%d') in ['01', '21', '31'] %}st{% elif data.joining_date.strftime('%d') in ['02', '22'] %}nd{% elif data.joining_date.strftime('%d') in ['03', '23'] %}rd{% else %}th{% endif %} 
+                    {{ data.joining_date.strftime('%B %Y') }}
+                {% else %}
+                    [Date Not Specified]
+                {% endif %}
+            </strong>. Your employment records are being updated to reflect the
+            same. Kindly note that salary appraisal/fitment is a function of a direct one-on-one change for all
+            employees. This is based on an individual evaluation, which was done in the appraisal process.
+        </p>
+
+        <p>
+            <strong>Your CTC will be Rs. {{ "{:,.2f}".format(data.ctc|float) }} per annum.</strong>
+        </p>
+
+        <p>
+            There is no change in your employment status and the terms and condition of your employment and
+            policies of the company governing it. Changes to the policies, if any, will be published in the respective
+            manuals that are available to all employees, on the intranet. We appreciate your commitment to the
+            organization and look forward to many more years of association. We wish you success in all future
+            endeavours.
+        </p>
+    </div>
+
+    <!-- Closing -->
+   <div class="row mt-5" style="margin-top: 50px;">
+            <div class="col-md-6">
+                
+                <div style="height: 80px; margin-bottom: 10px;">
+                    {% if company.signature %}
+                        <img src="{{ url_for('static', filename='images/signatures/' + company.signature) }}" 
+                             alt="Authorized Signature" 
+                             style="height: 100px; max-width: 200px; object-fit: contain;">
+                    {% endif %}
+                </div>
+                <p style="margin-bottom: 0;">
+                    <strong>{{ company.hr_name }}</strong><br>
+                    {{ company.hr_designation }}<br>
+                    <span style="font-size: 14px; color: #111111;"><strong>{{ company.name }}</strong></span>
+                </p>
+            </div>
+           
+        </div>
+        
+       <div style="margin-top: 40px; border-top: 1px solid #e0e0e0; padding-top: 10px; font-size: 12px; color: #777; text-align: center;">
+        <p style="margin-bottom: 0;">
+            *Company Confidential - This communication is confidential between you and {{ company.name }}
+        </p>
+    </div>
+</div>

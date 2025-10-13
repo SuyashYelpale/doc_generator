@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Combined Documents Preview</title>
+    <style>
+        /* Base Styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        
+        /* Document Container */
+        .document-wrapper {
+            width: 210mm; /* A4 width */
+            margin: 0 auto;
+        }
+        
+        .document-container {
+            background: white;
+            padding: 15mm; /* Print-safe margins */
+            margin-bottom: 10mm;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+            line-height: 1.5;
+            min-height: 297mm; /* A4 height */
+        }
+        
+        /* Print Specific Styles */
+        @media print {
+            body {
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            
+            .document-wrapper {
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            .document-container {
+                box-shadow: none !important;
+                padding: 15mm !important;
+                margin: 0 !important;
+                min-height: 277mm !important; /* Account for margins */
+            }
+            
+            .page-break {
+                page-break-before: always;
+                margin-top: 0;
+                padding-top: 0;
+            }
+            
+            .no-print {
+                display: none !important;
+            }
+            
+            @page {
+                size: A4;
+                margin: 15mm;
+            }
+        }
+        
+        /* Button Styling */
+        .print-button {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .print-btn {
+            padding: 12px 24px;
+            background: #0d6efd;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        
+        .print-btn:hover {
+            background: #0b5ed7;
+        }
+        
+        /* Document Title */
+        .document-title {
+            text-align: center;
+            color: #0d6efd;
+            margin-top: 0;
+            padding-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="document-wrapper">
+        <!-- Offer Letter -->
+        <div class="document-container">
+            {% with data=offer_data %}
+                {% include "documents/offer_letter.html" %}
+            {% endwith %}
+           
+            
+        </div>
+        
+        <!-- Salary Slip -->
+         <div class="document-container page-break">
+                {% with data=salary_data %}
+                {% include "documents/salary_slip.html" %}
+            {% endwith %}
+            </div>
+        
+        <!-- Print Button -->
+        <div class="print-button no-print">
+            <button onclick="window.print()" class="print-btn">
+                Print Both Documents
+            </button>
+        </div>
+    </div>
+</body>
+</html>

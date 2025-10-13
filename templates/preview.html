@@ -1,0 +1,73 @@
+    <!-- {% extends "base.html" %}
+
+    {% block content %}
+    <div class="container">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h2 class="mb-0">Document Preview - {{ data.document_type|replace('_',' ')|title }}</h2>
+            </div>
+            <div class="card-body">
+                Document Preview Container
+                <div class="document-preview mb-4 p-4 border rounded bg-white">
+                    {% include "documents/" + data.document_type + ".html" %}
+                </div>
+                
+                Generate PDF Form 
+                <form method="POST" action="{{ url_for('generate') }}" id="pdfForm">
+                    Hidden fields with all data 
+                    {% for key, value in data.items() %}
+                        {% if value is mapping %}
+                            {% for subkey, subvalue in value.items() %}
+                                <input type="hidden" name="{{ key }}.{{ subkey }}" value="{{ subvalue }}">
+                            {% endfor %}
+                        {% else %}
+                            {% if value is iterable and value is not string %}
+                                {% for item in value %}
+                                    <input type="hidden" name="{{ key }}" value="{{ item }}">
+                                {% endfor %}
+                            {% else %}
+                                <input type="hidden" name="{{ key }}" value="{{ value }}">
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{{ url_for('index') }}" class="btn btn-lg btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Form
+                        </a>
+                        <button type="submit" class="btn btn-lg btn-primary">
+                            <i class="bi bi-file-earmark-pdf"></i> Generate PDF
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .document-preview {
+            min-height: 500px;
+            background-color: #f8f9fa;
+        }
+        
+        @media print {
+            .card-header, .d-flex {
+                display: none !important;
+            }
+            
+            .document-preview {
+                border: none !important;
+                padding: 0 !important;
+                background-color: transparent !important;
+            }
+        }
+    </style>
+
+    <script>
+        // Add confirmation before generating PDF
+        document.getElementById('pdfForm').addEventListener('submit', function(e) {
+            // You could add validation here if needed
+            console.log('Generating PDF...');
+        });
+    </script>
+    {% endblock %} -->
