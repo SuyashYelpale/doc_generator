@@ -1,242 +1,211 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="card">
-    <div class="card-header">
-        <h2>Generate Company Documents</h2>
-    </div>
-    <div class="card-body">
-        <form method="POST" action="/">
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <label for="full_name" class="form-label">Full Name</label>
-                    <input type="text" class="form-control" id="full_name" name="full_name" required>
-                </div>
-                <div class="col-md-6">
-                    <label for="designation" class="form-label">Designation</label>
-                    <input type="text" class="form-control" id="designation" name="designation" required>
-                </div>
-            </div>
+<div class="container my-4">
+    <div class="card shadow-lg border-0 rounded-4">
+        <div class="card-header bg-primary text-white text-center rounded-top-4">
+            <h3 class="mb-0">Generate Company Documents</h3>
+        </div>
 
-            <div class="mb-3">
-                <label for="address" class="form-label">Address</label>
-                <textarea class="form-control" id="address" name="address" rows="3" required></textarea>
-            </div>
+        <div class="card-body p-4">
 
-            <div class="row mb-3">
-                <div class="col-md-4">
-                    <label for="aadhar_no" class="form-label">Aadhar Number</label>
-                    <input type="text" class="form-control" id="aadhar_no" name="aadhar_no">
-                </div>
-                <div class="col-md-4">
-                    <label for="pan_no" class="form-label">PAN Number</label>
-                    <input type="text" class="form-control" id="pan_no" name="pan_no">
-                </div>
-                <div class="col-md-4">
-                    <label for="joining_date" class="form-label">Joining Date</label>
-                    <input type="date" class="form-control" id="joining_date" name="joining_date" required>
-                </div>
-            </div>
+            <form method="POST" action="/">
 
-            <div class="row mb-3" id="resignation_date_container" style="display: none;">
-                <div class="col-md-6">
-                    <label for="resignation_date" class="form-label">Resignation Date</label>
-                    <input type="date" class="form-control" id="resignation_date" name="resignation_date">
-                </div>
-            </div>
+                <!-- Personal Details -->
+                <h5 class="mb-3 text-primary">Personal Details</h5>
 
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <label for="ctc" class="form-label">CTC/Current Package (per annum)</label>
-                    <input type="number" class="form-control" id="ctc" name="ctc" step="0.01">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-control" id="full_name" name="full_name" required>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label">Employee ID</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="employee_id" name="employee_id" readonly>
+                            <button type="button" class="btn btn-outline-secondary" id="generate_id_btn">
+                                Generate
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Designation</label>
+                        <input type="text" class="form-control" name="designation" required>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">Address</label>
+                        <textarea class="form-control" name="address" rows="3" required></textarea>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Aadhar Number</label>
+                        <input type="text" class="form-control" name="aadhar_no">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">PAN Number</label>
+                        <input type="text" class="form-control" name="pan_no">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Joining Date</label>
+                        <input type="date" class="form-control" name="joining_date" required>
+                    </div>
                 </div>
-                <div class="col-md-6 d-flex align-items-end">
-                    <button type="button" class="btn btn-outline-primary" id="salary_breakdown_btn">
-                        Show Salary Breakdown
+
+                <!-- Salary Section -->
+                <hr class="my-4">
+                <h5 class="mb-3 text-primary">Salary Details</h5>
+
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-6">
+                        <label class="form-label">CTC (Per Annum)</label>
+                        <input type="number" class="form-control" id="ctc" name="ctc" step="0.01">
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <button type="button" class="btn btn-outline-primary w-100 w-md-auto" id="salary_breakdown_btn">
+                            Show Salary Breakdown
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Salary Breakdown -->  
+                <div class="card mt-3 shadow-sm" id="salary_breakdown_card" style="display:none;">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">CTC Breakdown (Annual & Monthly)</h6>
+                    </div>
+                    <div class="card-body">
+
+                        <table class="table table-bordered table-sm text-center">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Component</th>
+                                    <th>Annual (₹)</th>
+                                    <th>Monthly (₹)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Basic Salary (40%)</td>
+                                    <td id="basic_annual"></td>
+                                    <td id="basic_monthly"></td>
+                                </tr>
+                                <tr>
+                                    <td>HRA (20% of Basic)</td>
+                                    <td id="hra_annual"></td>
+                                    <td id="hra_monthly"></td>
+                                </tr>
+                                <tr>
+                                    <td>Employer PF (12% of Basic)</td>
+                                    <td id="pf_annual"></td>
+                                    <td id="pf_monthly"></td>
+                                </tr>
+                                <tr>
+                                    <td>Gratuity (4.81% of Basic)</td>
+                                    <td id="gratuity_annual"></td>
+                                    <td id="gratuity_monthly"></td>
+                                </tr>
+                                <tr class="table-primary fw-bold">
+                                    <td>Special Allowance</td>
+                                    <td id="special_annual"></td>
+                                    <td id="special_monthly"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                    </div>
+                </div>
+
+                <!-- Bank Details -->
+                <hr class="my-4">
+                <h5 class="mb-3 text-primary">Bank Details</h5>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Account Holder</label>
+                        <input type="text" class="form-control" id="account_holder" name="account_holder">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Account Number</label>
+                        <input type="text" class="form-control" name="account_number">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Bank Name</label>
+                        <input type="text" class="form-control" name="bank_name">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Branch</label>
+                        <input type="text" class="form-control" name="branch">
+                    </div>
+                </div>
+
+                <!-- Document Section -->
+                <hr class="my-4">
+                <h5 class="mb-3 text-primary">Document Details</h5>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Select Company</label>
+                        <select class="form-select" name="company" required>
+                            <option value="">-- Select Company --</option>
+                            {% for company in companies %}
+                            <option value="{{ company.id }}">{{ company.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Document Type</label>
+                        <select class="form-select" id="document_type" name="document_type" required>
+                            <option value="">-- Select Document --</option>
+                            <option value="offer_letter">Offer Letter</option>
+                            <option value="salary_slip">Salary Slip</option>
+                            <option value="experience_letter">Experience Letter</option>
+                            <option value="increment_letter">Increment Letter</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Months -->
+                <div class="mt-3 d-none" id="months_div">
+                    <label class="form-label">Select Months</label>
+                    <div class="row row-cols-2 row-cols-md-4 g-2">
+                        {% for month in ['January','February','March','April','May','June','July','August','September','October','November','December'] %}
+                        <div class="col">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="months" value="{{ month }}">
+                                <label class="form-check-label">{{ month }}</label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Submit -->
+                <div class="d-grid mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg rounded-pill shadow-sm">
+                        Preview Document
                     </button>
                 </div>
-            </div>
 
-            <!-- Salary Breakdown (hidden by default) -->
-            <div class="card mb-3" id="salary_breakdown_card" style="display: none;">
-                <div class="card-header">
-                    <h5>Salary Breakdown</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <label for="basic" class="form-label">Basic Salary</label>
-                            <input type="number" class="form-control" id="basic" name="basic" step="0.01">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="hra" class="form-label">HRA</label>
-                            <input type="number" class="form-control" id="hra" name="hra" step="0.01">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="da" class="form-label">DA</label>
-                            <input type="number" class="form-control" id="da" name="da" step="0.01">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="conveyance" class="form-label">Conveyance</label>
-                            <input type="number" class="form-control" id="conveyance" name="conveyance" step="0.01">
-                        </div>
-                    </div>
-                    <div class="row mt-3">
-                        <div class="col-md-3">
-                            <label for="medical" class="form-label">Medical Allowance</label>
-                            <input type="number" class="form-control" id="medical" name="medical" step="0.01">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="special_allowance" class="form-label">Special Allowance</label>
-                            <input type="number" class="form-control" id="special_allowance" name="special_allowance" step="0.01">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="pf" class="form-label">PF Contribution</label>
-                            <input type="number" class="form-control" id="pf" name="pf" step="0.01">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="professional_tax" class="form-label">Professional Tax</label>
-                            <input type="number" class="form-control" id="professional_tax" name="professional_tax" step="0.01">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Bank Details -->
-            <div class="card mb-3">
-                <div class="card-header">
-                    <h5>Bank Details</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <label for="account_holder" class="form-label">Account Holder Name</label>
-                            <input type="text" class="form-control" id="account_holder" name="account_holder">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="account_number" class="form-label">Account Number</label>
-                            <input type="text" class="form-control" id="account_number" name="account_number">
-                        </div>
-                    </div>
-                    <div class="row mt-3">
-                        <div class="col-md-6">
-                            <label for="bank_name" class="form-label">Bank Name</label>
-                            <input type="text" class="form-control" id="bank_name" name="bank_name">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="branch" class="form-label">Branch</label>
-                            <input type="text" class="form-control" id="branch" name="branch">
-                        </div>
-                    </div>
-                    <div class="row mt-3">
-                        <div class="col-md-6">
-                            <label for="ifsc_code" class="form-label">IFSC Code</label>
-                            <input type="text" class="form-control" id="ifsc_code" name="ifsc_code">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <label for="company" class="form-label">Select Company</label>
-                    <select class="form-select" id="company" name="company" required>
-                        <option value="">-- Select Company --</option>
-                        {% for company in companies %}
-                        <option value="{{ company.id }}">{{ company.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-               <div class="col-md-6">
-    <label for="document_type" class="form-label">Document Type</label>
-    <select class="form-select" id="document_type" name="document_type" required>
-        <option value="">-- Select Document --</option>
-        <option value="offer_letter">Offer Letter</option>
-        <option value="offer_and_salary">Offer Letter</option>
-        <option value="designation_letter">Designation Letter</option>
-        <option value="salary_slip">Salary Slip</option>
-        <option value="experience_letter">Experience Letter</option>
-        <option value="increment_letter">Increment Letter</option>
-    </select>
-</div>
-
-<!-- Months Dropdown (Hidden by default) -->
-<div class="col-md-12" id="months_div" style="display:none; margin-top:10px;">
-    <label class="form-label">Select Months</label>
-    <div class="d-flex flex-wrap gap-3">
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="months" value="January" id="month_jan">
-            <label class="form-check-label" for="month_jan">January</label>
+            </form>
         </div>
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="months" value="February" id="month_feb">
-            <label class="form-check-label" for="month_feb">February</label>
-        </div>
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="months" value="March" id="month_mar">
-            <label class="form-check-label" for="month_mar">March</label>
-        </div>
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="months" value="April" id="month_apr">
-            <label class="form-check-label" for="month_apr">April</label>
-        </div>
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="months" value="May" id="month_may">
-            <label class="form-check-label" for="month_may">May</label>
-        </div>
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="months" value="June" id="month_jun">
-            <label class="form-check-label" for="month_jun">June</label>
-        </div>
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="months" value="July" id="month_jul">
-            <label class="form-check-label" for="month_jul">July</label>
-        </div>
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="months" value="August" id="month_aug">
-            <label class="form-check-label" for="month_aug">August</label>
-        </div>
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="months" value="September" id="month_sep">
-            <label class="form-check-label" for="month_sep">September</label>
-        </div>
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="months" value="October" id="month_oct">
-            <label class="form-check-label" for="month_oct">October</label>
-        </div>
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="months" value="November" id="month_nov">
-            <label class="form-check-label" for="month_nov">November</label>
-        </div>
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="months" value="December" id="month_dec">
-            <label class="form-check-label" for="month_dec">December</label>
-        </div>
-    </div>
-    <small class="text-muted d-block mt-1">You can select multiple months</small>
-</div>
-
-
-
-            <div class="d-grid gap-2">
-                <button type="submit" class="btn btn-primary">Preview Document</button>
-            </div>
-        </form>
     </div>
 </div>
 
 <script>
+
 document.getElementById('document_type').addEventListener('change', function() {
     const monthsDiv = document.getElementById('months_div');
-    const selectedDoc = this.value;
-
-    if (selectedDoc === 'salary_slip' || selectedDoc === 'offer_and_salary') {
-        monthsDiv.style.display = 'block';
+    if (this.value === 'salary_slip') {
+        monthsDiv.classList.remove('d-none');
     } else {
-        monthsDiv.style.display = 'none';
+        monthsDiv.classList.add('d-none');
     }
 });
 </script>
-
 
 {% endblock %}

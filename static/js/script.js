@@ -1,125 +1,151 @@
-document.addEventListener('DOMContentLoaded', function() {
-    // Show/hide resignation date based on document type
-    const documentType = document.getElementById('document_type');
-    const resignationDateContainer = document.getElementById('resignation_date_container');
-    
-    documentType.addEventListener('change', function() {
-        if (this.value === 'experience_letter' || this.value === 'relieving_letter') {
-            resignationDateContainer.style.display = 'block';
-            document.getElementById('resignation_date').required = true;
-        } else {
-            resignationDateContainer.style.display = 'none';
-            document.getElementById('resignation_date').required = false;
-        }
-    });
-    
-    // Salary breakdown toggle
-    const salaryBreakdownBtn = document.getElementById('salary_breakdown_btn');
-    const salaryBreakdownCard = document.getElementById('salary_breakdown_card');
-    
-    salaryBreakdownBtn.addEventListener('click', function() {
-        if (salaryBreakdownCard.style.display === 'none') {
-            salaryBreakdownCard.style.display = 'block';
-            this.textContent = 'Hide Salary Breakdown';
-            
-            // Auto-calculate salary breakdown if CTC is provided
-            const ctc = parseFloat(document.getElementById('ctc').value);
-            if (ctc && !isNaN(ctc)) {
-                const monthly = ctc / 12;
-                document.getElementById('basic').value = (monthly * 0.4).toFixed(2); // 40% basic
-                document.getElementById('hra').value = (monthly * 0.2).toFixed(2);   // 20% HRA
-                document.getElementById('da').value = (monthly * 0.1).toFixed(2);    // 10% DA
-                document.getElementById('conveyance').value = (monthly * 0.05).toFixed(2);
-                document.getElementById('medical').value = (monthly * 0.05).toFixed(2);
-                document.getElementById('special_allowance').value = (monthly * 0.2).toFixed(2);
-                document.getElementById('pf').value = (monthly * 0.12).toFixed(2);   // 12% of basic
-                document.getElementById('professional_tax').value = (200).toFixed(2); // Fixed PT
-            }
-        } else {
-            salaryBreakdownCard.style.display = 'none';
-            this.textContent = 'Show Salary Breakdown';
-        }
-    });
-    
-    // Auto-fill account holder name if empty
-    const fullName = document.getElementById('full_name');
-    const accountHolder = document.getElementById('account_holder');
-    
-    fullName.addEventListener('blur', function() {
-        if (!accountHolder.value) {
-            accountHolder.value = this.value;
-        }
-    });
+document.addEventListener("DOMContentLoaded", function () {
 
-    // Employee ID Generation
+    /* ================= SALARY BREAKDOWN ================= */
+
+    const btn = document.getElementById("salary_breakdown_btn");
+    const card = document.getElementById("salary_breakdown_card");
+    const ctcInput = document.getElementById("ctc");
+
+    if (btn && card && ctcInput) {
+
+        btn.addEventListener("click", function () {
+
+            const ctc = parseFloat(ctcInput.value);
+
+            if (!ctc || isNaN(ctc)) {
+                alert("Please enter valid CTC");
+                return;
+            }
+
+            const basicAnnual = ctc * 0.40;
+            const hraAnnual = basicAnnual * 0.20;
+            const pfAnnual = basicAnnual * 0.12;
+            const gratuityAnnual = basicAnnual * 0.0481;
+            const specialAnnual =
+                ctc - (basicAnnual + hraAnnual + pfAnnual + gratuityAnnual);
+
+            function format(num) {
+                return num.toLocaleString("en-IN", {
+                    maximumFractionDigits: 0
+                });
+            }
+
+            const setValue = (id, value) => {
+                const el = document.getElementById(id);
+                if (el) el.innerText = format(value);
+            };
+
+            setValue("basic_annual", basicAnnual);
+            setValue("basic_monthly", basicAnnual / 12);
+
+            setValue("hra_annual", hraAnnual);
+            setValue("hra_monthly", hraAnnual / 12);
+
+            setValue("pf_annual", pfAnnual);
+            setValue("pf_monthly", pfAnnual / 12);
+
+            setValue("gratuity_annual", gratuityAnnual);
+            setValue("gratuity_monthly", gratuityAnnual / 12);
+
+            setValue("special_annual", specialAnnual);
+            setValue("special_monthly", specialAnnual / 12);
+
+            // Toggle card safely
+            if (card.style.display === "none" || card.style.display === "") {
+                card.style.display = "block";
+                btn.textContent = "Hide Salary Breakdown";
+            } else {
+                card.style.display = "none";
+                btn.textContent = "Show Salary Breakdown";
+            }
+
+        });
+    }
+
+    /* ================= AUTO FILL ACCOUNT HOLDER ================= */
+
+    const fullName = document.getElementById("full_name");
+    const accountHolder = document.getElementById("account_holder");
+
+    if (fullName && accountHolder) {
+        fullName.addEventListener("blur", function () {
+            if (!accountHolder.value) {
+                accountHolder.value = this.value;
+            }
+        });
+    }
+
+    /* ================= EMPLOYEE ID GENERATION ================= */
+
     function generateEmployeeId() {
-        const fullName = document.getElementById('full_name').value.trim();
+
+        const fullNameField = document.getElementById("full_name");
+        const employeeIdField = document.getElementById("employee_id");
+
+        if (!fullNameField || !employeeIdField) return;
+
+        const fullName = fullNameField.value.trim();
         if (!fullName) return;
-        
-        const nameParts = fullName.split(' ');
-        let idPrefix = '';
-        
+
+        const nameParts = fullName.split(" ");
+        let idPrefix = "";
+
         if (nameParts.length >= 3) {
-            // First letter of first name + middle name + first letter of last name
-            idPrefix = nameParts[0][0].toUpperCase() + 
-                      nameParts[1].toUpperCase() + 
-                      nameParts[nameParts.length-1][0].toUpperCase();
+            idPrefix =
+                nameParts[0][0].toUpperCase() +
+                nameParts[1].toUpperCase() +
+                nameParts[nameParts.length - 1][0].toUpperCase();
         } else if (nameParts.length === 2) {
-            // First letter of first name + first letter of last name
-            idPrefix = nameParts[0][0].toUpperCase() + 
-                      nameParts[1][0].toUpperCase();
+            idPrefix =
+                nameParts[0][0].toUpperCase() +
+                nameParts[1][0].toUpperCase();
         } else {
-            // Just first letter if only one name
             idPrefix = nameParts[0][0].toUpperCase();
         }
-        
-        // Generate a random 4-digit number (1001-9999)
+
         const randomNum = Math.floor(1001 + Math.random() * 8999);
-        const employeeId = idPrefix + randomNum;
-        
-        document.getElementById('employee_id').value = employeeId;
+        employeeIdField.value = idPrefix + randomNum;
     }
 
-    // Set up event listeners for employee ID generation
-    const employeeIdField = document.getElementById('employee_id');
-    const fullNameField = document.getElementById('full_name');
-    
-    // Generate when name changes
-    fullNameField.addEventListener('blur', function() {
-        if (!employeeIdField.value) {
+    const fullNameField = document.getElementById("full_name");
+    const employeeIdField = document.getElementById("employee_id");
+
+    if (fullNameField && employeeIdField) {
+
+        fullNameField.addEventListener("blur", function () {
+            if (!employeeIdField.value) {
+                generateEmployeeId();
+            }
+        });
+
+        if (fullNameField.value && !employeeIdField.value) {
             generateEmployeeId();
         }
-    });
-    
-    // Add generate button functionality if exists
-    const generateIdBtn = document.getElementById('generate_id_btn');
-    if (generateIdBtn) {
-        generateIdBtn.addEventListener('click', generateEmployeeId);
-    }
-    
-    // Generate on page load if name exists
-    if (fullNameField.value && !employeeIdField.value) {
-        generateEmployeeId();
     }
 
-    // ----------------- Month/Year Print Update -----------------
+    const generateIdBtn = document.getElementById("generate_id_btn");
+    if (generateIdBtn) {
+        generateIdBtn.addEventListener("click", generateEmployeeId);
+    }
+
+    /* ================= MONTH YEAR PRINT ================= */
+
     function updatePrintText() {
+
         const monthField = document.getElementById("month");
         const yearField = document.getElementById("year");
         const outputField = document.getElementById("printMonthYear");
 
         if (monthField && yearField && outputField) {
-            const month = monthField.value;
-            const year = yearField.value;
-            outputField.textContent = month + " " + year;
+            outputField.textContent =
+                monthField.value + " " + yearField.value;
         }
     }
 
-    // Attach event listeners if elements exist
     const monthEl = document.getElementById("month");
     const yearEl = document.getElementById("year");
-    if (monthEl && yearEl) {
-        monthEl.addEventListener("change", updatePrintText);
-        yearEl.addEventListener("input", updatePrintText);
-    }
+
+    if (monthEl) monthEl.addEventListener("change", updatePrintText);
+    if (yearEl) yearEl.addEventListener("input", updatePrintText);
+
 });
