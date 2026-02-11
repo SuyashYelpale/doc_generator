@@ -148,4 +148,29 @@ document.addEventListener("DOMContentLoaded", function () {
     if (monthEl) monthEl.addEventListener("change", updatePrintText);
     if (yearEl) yearEl.addEventListener("input", updatePrintText);
 
+    /*==========Show Months + Year only for Salary Slip=============*/
+    const documentType = document.getElementById("document_type");
+    const monthsDiv = document.getElementById("months_div");
+    const yearDiv = document.getElementById("year_div");
+
+    if (documentType) {
+        documentType.addEventListener("change", function () {
+
+            if (this.value === "salary_slip") {
+                monthsDiv.classList.remove("d-none");
+                yearDiv.classList.remove("d-none");
+
+                document.getElementById("year").required = true;
+
+            } else {
+                monthsDiv.classList.add("d-none");
+                yearDiv.classList.add("d-none");
+
+                document.getElementById("year").required = false;
+            }
+
+        });
+    }
+
+
 });

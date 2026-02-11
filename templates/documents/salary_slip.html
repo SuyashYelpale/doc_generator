@@ -1,4 +1,5 @@
 <!-- templates/documents/salary_slip.html -->
+ {% for m in months %}
 <div class="offer-letter" style="font-family: 'Arial', sans-serif; max-width: 800px; margin: 0 auto; border: 1px solid #e0e0e0; box-shadow: 0 0 20px rgba(0,0,0,0.1); padding: 30px; position: relative; page-break-after: avoid; page-break-inside: avoid; background-color: white;">
 
     <!-- Watermark -->
@@ -39,11 +40,14 @@
             </div>
             <div style="flex: 1; min-width: 250px;">
                 <!-- <p style="margin: 5px 0;"><strong>Month:</strong> {{ month }}</p> -->
-                <p style="margin: 5px 0;"><strong>Month:</strong> December 2025</p>
+                <p style="margin: 5px 0;">
+                    <strong>Month:</strong> {{ m }}
+                </p>
+
 
 {% set auto_emp_num = (range(100000, 999999) | random) %}
 <p style="margin: 5px 0;">
-    <strong>Employee ID:</strong> EMP101240
+    <strong>Employee ID:</strong> 
         <!-- <strong>Employee ID:</strong> EMP{{ auto_emp_num }} -->
 
 </p>
@@ -196,3 +200,7 @@
 }
 </style>
 </div>
+
+<hr style="margin:40px 0; page-break-after: always;">
+
+{% endfor %}

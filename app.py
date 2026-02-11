@@ -109,7 +109,9 @@ def index():
         }
 
         selected_months = request.form.getlist('months')
+        selected_year = request.form.get('year')
         session['selected_months'] = selected_months
+        session['selected_year'] = selected_year
 
         session['form_data'] = form_data
         session['documents_to_process'] = [form_data['document_type']]
@@ -167,12 +169,13 @@ def preview():
     }
 
     # Build a month label for preview when applicable (use first selected month)
-    month_label = None
+    month_label = []
     if form_data.get('document_type') in ['salary_slip', 'offer_and_salary'] and selected_months:
-        m = selected_months[0].strip()
-        m = m[:1].upper() + m[1:].lower()
-        current_year = datetime.now().year
-        month_label = f"{m} {current_year}"
+        current_year = session.get('selected_year', datetime.now().year)
+        for m in selected_months:
+            m = m.strip()
+            m = m[:1].upper() + m[1:].lower()
+            month_label.append(f"{m} {current_year}")
 
     if form_data.get('document_type') == 'offer_and_salary':
         return render_template(
@@ -268,10 +271,12 @@ def preview_document(doc_type):
 @app.route('/generate', methods=['POST'])
 def generate_pdf():
     form_data = session.get('form_data', {})
+    
     if not form_data:
         return redirect(url_for('index'))
 
     form_data = convert_dates(form_data)
+    
 
     if form_data.get('joining_date'):
         date_before = get_previous_workday(form_data['joining_date'], 8)

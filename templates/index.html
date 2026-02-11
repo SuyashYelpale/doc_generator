@@ -19,7 +19,7 @@
                         <label class="form-label">Full Name</label>
                         <input type="text" class="form-control" id="full_name" name="full_name" required>
                     </div>
-                    
+
                     <div class="col-md-6">
                         <label class="form-label">Employee ID</label>
                         <div class="input-group">
@@ -184,6 +184,14 @@
                     </div>
                 </div>
 
+                <!-- Year -->
+                <div class="mt-3 d-none" id="year_div">
+                    <label class="form-label">Select Year</label>
+                    <input type="number" class="form-control" name="year" id="year"
+                        min="2000" max="2100" placeholder="Enter Year">
+                </div>
+
+
                 <!-- Submit -->
                 <div class="d-grid mt-4">
                     <button type="submit" class="btn btn-primary btn-lg rounded-pill shadow-sm">
@@ -198,13 +206,20 @@
 
 <script>
 
-document.getElementById('document_type').addEventListener('change', function() {
-    const monthsDiv = document.getElementById('months_div');
-    if (this.value === 'salary_slip') {
-        monthsDiv.classList.remove('d-none');
-    } else {
-        monthsDiv.classList.add('d-none');
+document.querySelector("form").addEventListener("submit", function(e) {
+
+    const docType = document.getElementById("document_type").value;
+
+    if(docType === "salary_slip") {
+
+        const months = document.querySelectorAll("input[name='months']:checked");
+
+        if(months.length === 0) {
+            e.preventDefault();
+            alert("Please select at least one month.");
+        }
     }
+
 });
 </script>
 
