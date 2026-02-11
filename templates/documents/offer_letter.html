@@ -1,9 +1,12 @@
 <div class="offer-letter" style="font-family: 'Arial', sans-serif; max-width: 800px; margin: 0 auto; border: 1px solid #e0e0e0; box-shadow: 0 0 20px rgba(0,0,0,0.1); padding: 30px; position: relative;">
     <!-- Watermark -->
     <div class="watermark" style="position: fixed; opacity: 0.1; font-size: 120px; transform: rotate(-20deg); top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-20deg); z-index: -1; font-weight: bold; color: #e5e8ec; pointer-events: none;">
-        <img src="{{ url_for('static', filename='images/lc_logo.png') }}" 
+        <!-- <img src="{{ url_for('static', filename='images/lc_logo.png') }}" 
              alt="{{ company.name }} Watermark" 
-             style="height: 400px; max-width: 500px; object-fit: contain; filter: grayscale(100%);">
+             style="height: 400px; max-width: 500px; object-fit: contain; filter: grayscale(100%);"> -->
+             <!-- <img src="{{ url_for('static', filename='images/company2_signature.png') }}" 
+             alt="{{ company.name }} Watermark" 
+             style="height: 400px; max-width: 500px; object-fit: contain; filter: grayscale(100%);"> -->
     </div>
 
     <style>
@@ -88,7 +91,7 @@
 <span>
   <strong>Date:</strong> 
   {% if data.date_before %}
-      {{ data.date_before.strftime('%d') }}
+      {{ data.date_before.strftime('%d')}}
       {% if data.date_before.strftime('%d') in ['1', '21', '31'] %}st
       {% elif data.date_before.strftime('%d') in ['2', '22'] %}nd
       {% elif data.date_before.strftime('%d') in ['3', '23'] %}rd
