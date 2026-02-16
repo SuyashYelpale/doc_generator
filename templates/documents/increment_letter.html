@@ -53,14 +53,13 @@
         </p>
 
         <p>
-            Please be informed that your salary is incremented of <strong>Rs. {{ "{:,.2f}".format((data.ctc|float)/12) }} per month</strong>, 
-            positioned at <strong>{{ data.designation }}</strong>, effective from 
+            We are pleased to inform you that your salary has been increased by <strong>Rs. {{ data.salary_breakdown['increment_per_month'] }} per month</strong>, 
+            positioned at <strong>{{ data.designation }}</strong>, effective from
             <strong>
-                {% if data.joining_date %}
-                    {{ data.joining_date.strftime('%d') }}{% if data.joining_date.strftime('%d') in ['01', '21', '31'] %}st{% elif data.joining_date.strftime('%d') in ['02', '22'] %}nd{% elif data.joining_date.strftime('%d') in ['03', '23'] %}rd{% else %}th{% endif %} 
-                    {{ data.joining_date.strftime('%B %Y') }}
+                {% if data.formatted_joining_date %}
+                    {{ data.formatted_joining_date }}
                 {% else %}
-                    [Date Not Specified]
+                    Not Specified
                 {% endif %}
             </strong>. Your employment records are being updated to reflect the
             same. Kindly note that salary appraisal/fitment is a function of a direct one-on-one change for all
@@ -68,7 +67,7 @@
         </p>
 
         <p>
-            <strong>Your CTC will be Rs. {{ "{:,.2f}".format(data.ctc|float) }} per annum.</strong>
+            <strong>Your revised salary will be Rs. {{ data['monthly_ctc_after_increment'] }} effective immediately.</strong>
         </p>
 
         <p>

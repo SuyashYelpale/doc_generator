@@ -364,18 +364,9 @@
 
     <!-- Save as PDF Button -->
     <div class="no-print" style="text-align: center; margin-top: 30px;">
-        <button onclick="generatePDF()" style="padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold;">
-            Save as PDF
-        </button>
+        <form method="POST" action="{{ url_for('generate') }}">
+            <button type="submit" class="btn btn-success">
+                Download PDF
+            </button>
+        </form>
     </div>
-
-<script>
-    function generatePDF() {
-        // This would be replaced with actual PDF generation logic
-        // For now, we'll just trigger the print dialog
-        window.print();
-        
-        // In a real implementation, you might use:
-        // window.location.href = "{{ url_for('generate_pdf') }}";
-    }
-</script>

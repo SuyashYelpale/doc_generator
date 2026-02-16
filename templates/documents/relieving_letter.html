@@ -45,7 +45,7 @@
     <div style="text-align: justify; line-height: 1.8; font-size: 15px; position: relative; z-index: 1;">
         <p>
             This is to formally acknowledge that <strong>{{ data.full_name }}</strong> 
-            has resigned from the position of <strong>{{ data.designation }}</strong> 
+            has resigned from the position of <strong>{{ data.designation }}</strong> on <strong> {{ data.formatted_resignation_date }}</strong>
             at <strong>{{ company.name }}</strong>.
         </p>
 
@@ -53,7 +53,7 @@
             The resignation has been accepted and the employee has been relieved 
             from duties effective 
             <strong>
-                {{ data.resignation_date.strftime('%d %B %Y') if data.resignation_date else '' }}
+                {{ data.relieving_date }}
             </strong>.
         </p>
 
