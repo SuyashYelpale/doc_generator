@@ -1,8 +1,72 @@
-<div class="increment-letter" style="font-family: 'Arial', sans-serif; max-width: 800px; margin: 0 auto; padding: 30px; position: relative;">
-    <!-- Company Header -->
-    <div style="position: absolute; opacity: 0.1; font-size: 120px; transform: rotate(-30deg); top: 30%; left: 10%; z-index: -1; font-weight: bold; color: #0d6efd;">
-        {{ company.name }}
+<!-- Action Bar -->
+<div class="action-bar">
+    <form action="{{ url_for('generate') }}" method="POST">
+        <button type="submit" class="download-btn">
+            ⬇ Download PDF
+        </button>
+    </form>
+</div>
+
+<style>
+    .action-bar{
+        max-width: 800px;
+        margin: 20px auto;
+        display:flex;
+        justify-content: flex-end;
+    }
+
+    .download-btn {
+        background-color: #0d6efd;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        font-size: 16px;
+        font-weight: 600;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .download-btn:hover {
+        background-color: #0b5ed7;
+        transform: translateY(-2px);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .download-btn {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+    }
+
+    /* Hide button in pdf/print */
+    @media print{
+        .action-bar{
+            display:none;
+        }
+    }
+</style>
+
+
+<div class="increment-letter" style="font-family: 'Arial', sans-serif; max-width: 800px; margin: 0 auto; padding: 30px; position: relative; overflow: hidden;">
+    <!-- Watermarks logo background -->
+    <div style="
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-30deg);
+        opacity: 0.08;
+        width: 100%;
+        z-index: -1;
+        text-align: center;
+    ">
+        <img src="{{ request.url_root }}static/images/{{ lc_logo }}"
+            style="width:500px;">
     </div>
+
+
 
     <!-- Letterhead with decorative border -->
     <div class="letter-header mb-4" style="border-bottom: 2px solid #0d6efd; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; gap: 3rem;">
@@ -35,13 +99,13 @@
 
     <!-- Employee Details -->
     <div style="margin-bottom: 20px;">
-        <p style="font-weight: bold; margin-bottom: 5px;">{{ data.full_name }}</p>
+        <p style="font-weight: bold; margin-bottom: 5px;">{{ data.full_name|title }}</p>
         <p style="margin-top: 0;">EMP ID - {{ data.employee_id or 'Not Specified' }}</p>
     </div>
 
     <!-- Salutation -->
     <p style="margin-bottom: 20px;">
-        Dear,
+        Dear {{data.full_name.split(' ')[0]|capitalize if data.full_name else 'Employee' }},
     </p>
 
     <!-- Letter Content -->
@@ -54,7 +118,7 @@
 
         <p>
             We are pleased to inform you that your salary has been increased by <strong>Rs. {{ data.salary_breakdown['increment_per_month'] }} per month</strong>, 
-            positioned at <strong>{{ data.designation }}</strong>, effective from
+            positioned at <strong>{{ data.designation|title }}</strong>, effective from
             <strong>
                 {% if data.formatted_joining_date %}
                     {{ data.formatted_joining_date }}

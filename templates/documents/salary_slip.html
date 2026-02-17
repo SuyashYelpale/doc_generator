@@ -1,3 +1,54 @@
+<!-- Action Bar -->
+<div class="action-bar">
+    <form action="{{ url_for('generate') }}" method="POST">
+        <button type="submit" class="download-btn">
+            ⬇ Download PDF
+        </button>
+    </form>
+</div>
+
+<style>
+    .action-bar{
+        max-width: 800px;
+        margin: 20px auto;
+        display:flex;
+        justify-content: flex-end;
+    }
+
+    .download-btn {
+        background-color: #0d6efd;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        font-size: 16px;
+        font-weight: 600;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .download-btn:hover {
+        background-color: #0b5ed7;
+        transform: translateY(-2px);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .download-btn {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+    }
+
+    /* Hide button in pdf/print */
+    @media print{
+        .action-bar{
+            display:none;
+        }
+    }
+</style>
+
 <!-- templates/documents/salary_slip.html -->
  {% for m in months %}
 <div class="offer-letter" style="font-family: 'Arial', sans-serif; max-width: 800px; margin: 0 auto; border: 1px solid #e0e0e0; box-shadow: 0 0 20px rgba(0,0,0,0.1); padding: 30px; position: relative; page-break-after: avoid; page-break-inside: avoid; background-color: white;">

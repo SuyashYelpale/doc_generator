@@ -236,6 +236,19 @@ def preview():
 
     form_data['monthly_ctc_after_increment'] = monthly_ctc_after_increment
 
+    joining_date = form_data.get("joining_date")
+
+    if joining_date:
+        if isinstance(joining_date, str):
+            joining_date_obj = datetime.strptime(joining_date, "%Y-%m-%d")
+        else:
+            joining_date_obj = joining_date   # already datetime
+
+        form_data['formatted_joining_date'] = joining_date_obj.strftime("%d %B %Y")
+    else:
+        form_data['formatted_joining_date'] = None
+
+
     # Build a month label for preview when applicable (use first selected month)
     month_label = []
     if form_data.get('document_type') in ['salary_slip', 'offer_and_salary'] and selected_months:
@@ -252,7 +265,7 @@ def preview():
             company=company,
             months=selected_months,
             month=month_label,
-            lc_logo="your_watermark_logo.png"
+            lc_logo="lc_logo.png"
         )
 
     template = f"documents/{form_data['document_type']}.html"
@@ -262,7 +275,7 @@ def preview():
         company=company,
         months=selected_months,
         month=month_label,
-        lc_logo="your_watermark_logo.png"
+        lc_logo="lc_logo.png"
     )
 
 @app.route('/preview_document/<doc_type>')
@@ -318,6 +331,18 @@ def preview_document(doc_type):
 
     form_data['monthly_ctc_after_increment'] = monthly_ctc_after_increment
 
+    joining_date = form_data.get("joining_date")
+
+    if joining_date:
+        if isinstance(joining_date, str):
+            joining_date_obj = datetime.strptime(joining_date, "%Y-%m-%d")
+        else:
+            joining_date_obj = joining_date   # already datetime
+
+        form_data['formatted_joining_date'] = joining_date_obj.strftime("%d %B %Y")
+    else:
+        form_data['formatted_joining_date'] = None
+
 
     # month label for preview route
     month_label = None
@@ -334,7 +359,7 @@ def preview_document(doc_type):
             company=company,
             months=selected_months,
             month=month_label,
-            lc_logo="your_watermark_logo.png"
+            lc_logo="lc_logo.png"
         )
 
     template = f"documents/{doc_type}.html"
@@ -344,7 +369,7 @@ def preview_document(doc_type):
         company=company,
         months=selected_months,
         month=month_label,
-        lc_logo="your_watermark_logo.png"
+        lc_logo="lc_logo.png"
     )
 
 @app.route('/generate', methods=['POST'])
