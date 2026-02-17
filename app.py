@@ -248,6 +248,19 @@ def preview():
     else:
         form_data['formatted_joining_date'] = None
 
+    resignation_date = form_data.get("resignation_date")
+    if resignation_date:
+        if isinstance(resignation_date, str):
+            resignation_date_obj = datetime.strptime(resignation_date, "%Y-%m-%d")
+        else:
+            resignation_date_obj = resignation_date   # already datetime
+
+        form_data['formatted_resignation_date'] = resignation_date_obj.strftime("%d %B %Y")
+        relieving_date = resignation_date_obj + timedelta(days=30)
+        form_data['relieving_date'] = relieving_date.strftime("%d %B %Y")
+    else:
+        form_data['formatted_resignation_date'] = None
+        form_data['relieving_date'] = None
 
     # Build a month label for preview when applicable (use first selected month)
     month_label = []
@@ -342,6 +355,20 @@ def preview_document(doc_type):
         form_data['formatted_joining_date'] = joining_date_obj.strftime("%d %B %Y")
     else:
         form_data['formatted_joining_date'] = None
+
+    resignation_date = form_data.get("resignation_date")
+    if resignation_date:
+        if isinstance(resignation_date, str):
+            resignation_date_obj = datetime.strptime(resignation_date, "%Y-%m-%d")
+        else:
+            resignation_date_obj = resignation_date   # already datetime
+
+        form_data['formatted_resignation_date'] = resignation_date_obj.strftime("%d %B %Y")
+        relieving_date = resignation_date_obj + timedelta(days=30)
+        form_data['relieving_date'] = relieving_date.strftime("%d %B %Y")
+    else:
+        form_data['formatted_resignation_date'] = None
+        form_data['relieving_date'] = None
 
 
     # month label for preview route

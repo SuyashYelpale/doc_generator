@@ -59,7 +59,7 @@
         transform: translate(-50%, -50%) rotate(-30deg);
         opacity: 0.08;
         width: 100%;
-        z-index: -1;
+        z-index: 0;
         text-align: center;
     ">
         <img src="{{ request.url_root }}static/images/{{ lc_logo }}"
@@ -97,16 +97,16 @@
 
     <!-- Employee Info -->
     <div style="margin-bottom: 20px; position: relative; z-index: 1;">
-        <p><strong>Employee Name:</strong> {{ data.full_name }}</p>
+        <p><strong>Employee Name:</strong> {{ data.full_name|title }}</p>
         <p><strong>Employee ID:</strong> {{ data.employee_id }}</p>
-        <p><strong>Designation:</strong> {{ data.designation }}</p>
+        <p><strong>Designation:</strong> {{ data.designation|title }}</p>
     </div>
 
     <!-- Letter Body -->
     <div style="text-align: justify; line-height: 1.8; font-size: 15px; position: relative; z-index: 1;">
         <p>
-            This is to formally acknowledge that <strong>{{ data.full_name }}</strong> 
-            has resigned from the position of <strong>{{ data.designation }}</strong> on <strong> {{ data.formatted_resignation_date }}</strong>
+            This is to formally acknowledge that <strong>{{ data.full_name|title }}</strong> 
+            has resigned from the position of <strong>{{ data.designation|title }}</strong> on <strong> {{ data.formatted_resignation_date or 'Not Specified' }}</strong>
             at <strong>{{ company.name }}</strong>.
         </p>
 
@@ -114,7 +114,7 @@
             The resignation has been accepted and the employee has been relieved 
             from duties effective 
             <strong>
-                {{ data.relieving_date }}
+                {{ data.relieving_date or 'Not Specified' }}
             </strong>.
         </p>
 
