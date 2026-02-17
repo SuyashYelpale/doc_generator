@@ -52,21 +52,7 @@
 
 <div class="increment-letter" style="font-family: 'Arial', sans-serif; max-width: 800px; margin: 0 auto; padding: 30px; position: relative; overflow: hidden;">
     <!-- Watermarks logo background -->
-    <div style="
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%) rotate(-30deg);
-        opacity: 0.08;
-        width: 100%;
-        z-index: -1;
-        text-align: center;
-    ">
-        <img src="{{ request.url_root }}static/images/{{ lc_logo }}"
-            style="width:500px;">
-    </div>
-
-
+     {% include '_watermark.html' %}
 
     <!-- Letterhead with decorative border -->
     <div class="letter-header mb-4" style="border-bottom: 2px solid #0d6efd; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; gap: 3rem;">

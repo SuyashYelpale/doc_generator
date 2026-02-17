@@ -53,12 +53,8 @@
  {% for m in months %}
 <div class="offer-letter" style="font-family: 'Arial', sans-serif; max-width: 800px; margin: 0 auto; border: 1px solid #e0e0e0; box-shadow: 0 0 20px rgba(0,0,0,0.1); padding: 30px; position: relative; page-break-after: avoid; page-break-inside: avoid; background-color: white;">
 
-    <!-- Watermark -->
-    <div style="position: absolute; opacity: 0.05; font-size: 120px; transform: rotate(-20deg); top: 30%; left: 25%; z-index: 0; font-weight: bold; color: #e5e8ec;">
-        <img src="{{ url_for('static', filename='images/lc_logo.png') }}" 
-             alt="{{ company.name }} Watermark" 
-             style="height: 400px; max-width: 500px; object-fit: contain; filter: grayscale(100%);">
-    </div>
+    <!-- Watermarks logo background -->
+     {% include '_watermark.html' %}
 
      <!-- Letterhead with decorative border -->
     <div class="letter-header mb-4" style="border-bottom: 2px solid #0d6efd; padding-bottom: 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; gap: 3rem; position: relative; z-index: 1;">
