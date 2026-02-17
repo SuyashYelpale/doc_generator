@@ -113,7 +113,10 @@ def humanize_filter(value):
 
 @app.context_processor
 def inject_now():
-    return {'now': datetime.now()}
+    return {
+        'now': datetime.now(),
+        'timedelta': timedelta  # Add timedelta to template context
+    }
 
 def get_previous_workday(target_date, days_before):
     """Get previous working day (Monday-Friday)"""

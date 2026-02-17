@@ -1,22 +1,21 @@
 <!-- Action Bar -->
 <div class="action-bar">
-    <form action="{{ url_for('generate') }}" method="POST">
-        <button type="submit" class="download-btn">
-            ⬇ Download PDF
-        </button>
-    </form>
+    <!-- Print Button Only -->
+    <button type="button" class="print-btn" onclick="window.print()">
+        🖨️ Save as PDF
+    </button>
 </div>
 
 <style>
-    .action-bar{
+    .action-bar {
         max-width: 800px;
         margin: 20px auto;
-        display:flex;
+        display: flex;
         justify-content: flex-end;
     }
 
-    .download-btn {
-        background-color: #0d6efd;
+    .print-btn {
+        background-color: #0d6efd;  /* Blue color */
         color: white;
         border: none;
         padding: 10px 20px;
@@ -24,27 +23,19 @@
         font-weight: 600;
         border-radius: 5px;
         cursor: pointer;
-        transition: background-color 0.3s ease;
+        transition: all 0.3s ease;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
 
-    .download-btn:hover {
+    .print-btn:hover {
         background-color: #0b5ed7;
         transform: translateY(-2px);
     }
 
-    /* Responsive */
-    @media (max-width: 768px) {
-        .download-btn {
-            padding: 8px 16px;
-            font-size: 14px;
-        }
-    }
-
-    /* Hide button in pdf/print */
-    @media print{
-        .action-bar{
-            display:none;
+    /* Hide button in print mode */
+    @media print {
+        .action-bar {
+            display: none !important;
         }
     }
 </style>
