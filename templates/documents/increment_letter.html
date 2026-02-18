@@ -1,45 +1,192 @@
 <!-- Action Bar -->
 <div class="action-bar">
-    <!-- Print Button Only -->
-    <button type="button" class="print-btn" onclick="window.print()">
-        🖨️ Save as PDF
-    </button>
+    <div class="action-bar-container">
+        <!-- Download Button -->
+        <form action="{{ url_for('generate') }}" method="POST" class="action-form">
+            <button type="submit" class="btn btn-primary">
+                <span class="btn-icon">📥</span>
+                <span class="btn-text">Download & Save</span>
+            </button>
+        </form>
+
+        <!-- Print Button -->
+        <button type="button" class="btn btn-secondary" onclick="window.print()">
+            <span class="btn-icon">🖨️</span>
+            <span class="btn-text">Print</span>
+        </button>
+
+        <!-- Cancel Button -->
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-danger">
+            <span class="btn-icon">✕</span>
+            <span class="btn-text">Cancel</span>
+        </a>
+    </div>
 </div>
 
 <style>
+    /* Action Bar Container */
     .action-bar {
-        max-width: 800px;
-        margin: 20px auto;
+        background: white;
+        border-bottom: 1px solid #e9ecef;
+        padding: 15px 0;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .action-bar-container {
+        max-width: 900px;
+        margin: 0 auto;
         display: flex;
+        gap: 12px;
         justify-content: flex-end;
+        align-items: center;
+        padding: 0 20px;
     }
 
-    .print-btn {
-        background-color: #0d6efd;  /* Blue color */
-        color: white;
+    /* Base Button Styles */
+    .btn {
+        padding: 12px 24px;
         border: none;
-        padding: 10px 20px;
-        font-size: 16px;
+        border-radius: 8px;
+        font-size: 15px;
         font-weight: 600;
-        border-radius: 5px;
         cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        letter-spacing: 0.3px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
 
-    .print-btn:hover {
-        background-color: #0b5ed7;
+    .btn:before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        transform: translate(-50%, -50%);
+        transition: width 0.6s, height 0.6s;
+    }
+
+    .btn:hover:before {
+        width: 300px;
+        height: 300px;
+    }
+
+    .btn-icon {
+        font-size: 18px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .btn-text {
+        position: relative;
+        z-index: 1;
+    }
+
+    /* Primary Button - Green */
+    .btn-primary {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
+    }
+
+    .btn-primary:hover {
         transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(40, 167, 69, 0.3);
+        background: linear-gradient(135deg, #218838 0%, #1ba87e 100%);
     }
 
-    /* Hide button in print mode */
+    .btn-primary:active {
+        transform: translateY(0);
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
+    }
+
+    /* Secondary Button - Blue */
+    .btn-secondary {
+        background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.2);
+    }
+
+    .btn-secondary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(13, 110, 253, 0.3);
+        background: linear-gradient(135deg, #0b5ed7 0%, #0bb5d9 100%);
+    }
+
+    .btn-secondary:active {
+        transform: translateY(0);
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.2);
+    }
+
+    /* Danger Button - Red */
+    .btn-danger {
+        background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.2);
+    }
+
+    .btn-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(220, 53, 69, 0.3);
+        background: linear-gradient(135deg, #c82333 0%, #d62c1a 100%);
+    }
+
+    .btn-danger:active {
+        transform: translateY(0);
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.2);
+    }
+
+    /* Hide buttons in print mode */
     @media print {
         .action-bar {
             display: none !important;
         }
     }
-</style>
 
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .action-bar-container {
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            font-size: 14px;
+        }
+
+        .btn-text {
+            display: inline-block;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .btn {
+            padding: 8px 12px;
+        }
+        
+        .btn-text {
+            display: none;
+        }
+        
+        .btn-icon {
+            font-size: 20px;
+            margin: 0;
+        }
+    }
+</style>
 
 <div class="increment-letter" style="font-family: 'Arial', sans-serif; max-width: 800px; margin: 0 auto; padding: 30px; position: relative; overflow: hidden;">
     <!-- Watermarks logo background -->

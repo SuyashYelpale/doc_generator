@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">➕ Add New Employee</h4>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('add_employee') }}" enctype="multipart/form-data">
+                <div class="row">
+                    <!-- Personal Information -->
+                    <div class="col-12">
+                        <h5 class="text-primary">Personal Information</h5>
+                        <hr>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Full Name *</label>
+                        <input type="text" name="full_name" class="form-control" required>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control">
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Phone</label>
+                        <input type="text" name="phone" class="form-control">
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Aadhar Number</label>
+                        <input type="text" name="aadhar_no" class="form-control">
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">PAN Number</label>
+                        <input type="text" name="pan_no" class="form-control">
+                    </div>
+                    
+                    <div class="col-12 mb-3">
+                        <label class="form-label">Address</label>
+                        <textarea name="address" class="form-control" rows="2"></textarea>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Profile Photo</label>
+                        <input type="file" name="profile_image" class="form-control" accept="image/*">
+                    </div>
+                    
+                    <!-- Employment Information -->
+                    <div class="col-12 mt-3">
+                        <h5 class="text-primary">Employment Information</h5>
+                        <hr>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Designation *</label>
+                        <input type="text" name="designation" class="form-control" required>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Department</label>
+                        <input type="text" name="department" class="form-control">
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">CTC (Annual)</label>
+                        <input type="number" name="ctc" class="form-control" step="0.01">
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Increment per Month</label>
+                        <input type="number" name="increment_per_month" class="form-control" step="0.01">
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-select">
+                            <option value="active">Active</option>
+                            <option value="resigned">Resigned</option>
+                            <option value="terminated">Terminated</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Joining Date</label>
+                        <input type="date" name="joining_date" class="form-control">
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Resignation Date</label>
+                        <input type="date" name="resignation_date" class="form-control">
+                    </div>
+                    
+                    <!-- Bank Details -->
+                    <div class="col-12 mt-3">
+                        <h5 class="text-primary">Bank Details</h5>
+                        <hr>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Account Holder Name</label>
+                        <input type="text" name="account_holder" class="form-control">
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Account Number</label>
+                        <input type="text" name="account_number" class="form-control">
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Bank Name</label>
+                        <input type="text" name="bank_name" class="form-control">
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Branch</label>
+                        <input type="text" name="branch" class="form-control">
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">IFSC Code</label>
+                        <input type="text" name="ifsc_code" class="form-control">
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">Save Employee</button>
+                    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

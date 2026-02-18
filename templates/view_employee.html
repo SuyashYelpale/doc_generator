@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header with Back Button -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary me-3">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            Employee Details
+        </h2>
+        <div>
+            <span class="badge bg-{{ 'success' if employee.status == 'active' else 'danger' }} p-3">
+                {{ employee.status|upper }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Employee Profile Card -->
+    <div class="row">
+        <!-- Main Info Card -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    {% if employee.profile_image %}
+                        <img src="{{ url_for('serve_profile_image', filename=employee.profile_image) }}" 
+                             class="rounded-circle mb-3" 
+                             style="width: 120px; height: 120px; object-fit: cover; border: 3px solid white;">
+                    {% else %}
+                        <div class="rounded-circle bg-white text-primary d-flex align-items-center justify-content-center mx-auto mb-3"
+                             style="width: 120px; height: 120px; font-size: 48px;">
+                            {{ employee.full_name[:1] }}
+                        </div>
+                    {% endif %}
+                    <h4 class="mb-0">{{ employee.full_name }}</h4>
+                    <p class="mb-0">{{ employee.employee_id }}</p>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="text-muted">Email</label>
+                        <p class="fw-bold">{{ employee.email or 'N/A' }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted">Phone</label>
+                        <p class="fw-bold">{{ employee.phone or 'N/A' }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted">Designation</label>
+                        <p class="fw-bold">{{ employee.designation }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted">Department</label>
+                        <p class="fw-bold">{{ employee.department or 'N/A' }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted">Joining Date</label>
+                        <p class="fw-bold">
+                            {% if employee.joining_date %}
+                                {{ employee.joining_date.strftime('%d %B %Y') }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted">Resignation Date</label>
+                        <p class="fw-bold">
+                            {% if employee.resignation_date %}
+                                {{ employee.resignation_date.strftime('%d %B %Y') }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Salary & Bank Details -->
+        <div class="col-md-8 mb-4">
+            <div class="row">
+                <!-- Salary Details -->
+                <div class="col-12 mb-4">
+                    <div class="card shadow">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="fas fa-rupee-sign me-2"></i>Salary Details</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td>Annual CTC:</td>
+                                            <td class="fw-bold">₹{{ "{:,.2f}".format(employee.ctc) }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Monthly CTC:</td>
+                                            <td class="fw-bold">₹{{ "{:,.2f}".format(employee.ctc/12) }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Increment/Month:</td>
+                                            <td class="fw-bold text-success">
+                                                + ₹{{ "{:,.2f}".format(employee.increment_per_month) }}
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    {% set basic = (employee.ctc * 0.5) | round %}
+                                    {% set hra = (basic * 0.5) | round %}
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td>Basic (50%):</td>
+                                            <td>₹{{ "{:,.2f}".format(basic) }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>HRA (50% of Basic):</td>
+                                            <td>₹{{ "{:,.2f}".format(hra) }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bank Details -->
+                <div class="col-12 mb-4">
+                    <div class="card shadow">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="fas fa-university me-2"></i>Bank Details</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td>Account Holder:</td>
+                                            <td class="fw-bold">{{ employee.account_holder or 'N/A' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Account Number:</td>
+                                            <td class="fw-bold">{{ employee.account_number or 'N/A' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Bank Name:</td>
+                                            <td class="fw-bold">{{ employee.bank_name or 'N/A' }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td>Branch:</td>
+                                            <td class="fw-bold">{{ employee.branch or 'N/A' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>IFSC Code:</td>
+                                            <td class="fw-bold">{{ employee.ifsc_code or 'N/A' }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Personal Documents -->
+                <div class="col-12">
+                    <div class="card shadow">
+                        <div class="card-header bg-warning">
+                            <h5 class="mb-0"><i class="fas fa-id-card me-2"></i>Personal Documents</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td>Aadhar Number:</td>
+                                            <td class="fw-bold">{{ employee.aadhar_no or 'N/A' }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td>PAN Number:</td>
+                                            <td class="fw-bold">{{ employee.pan_no or 'N/A' }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generated Documents History -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Generated Documents</h5>
+                </div>
+                <div class="card-body">
+                    {% if documents %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Document Type</th>
+                                    <th>Filename</th>
+                                    <th>Month/Year</th>
+                                    <th>Generated Date</th>
+                                    <th>Generated By</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for doc in documents %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-primary">
+                                            {{ doc.document_type.replace('_', ' ')|title }}
+                                        </span>
+                                    </td>
+                                    <td>{{ doc.filename }}</td>
+                                    <td>
+                                        {% if doc.month and doc.year %}
+                                            {{ doc.month }} {{ doc.year }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ doc.generated_at.strftime('%d %b %Y, %H:%M') }}</td>
+                                    <td>{{ doc.generated_by }}</td>
+                                    <td>
+                                        <a href="{{ url_for('serve_employee_document', emp_folder=employee.employee_id + '_' + employee.full_name|replace(' ', '_'), doc_type=doc.document_type + 's', filename=doc.filename) }}" 
+                                           class="btn btn-sm btn-success" target="_blank">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted my-4">No documents generated yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
