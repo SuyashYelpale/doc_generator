@@ -1,19 +1,48 @@
 {% extends "base.html" %}
 
 {% block content %}
+
+
 <div class="container-fluid py-4">
     <!-- Header with Back Button -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>
-            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary me-3">
+            <a href="{{ url_for('admin_dashboard', tab='employees') }}" class="btn btn-outline-secondary me-3">
                 <i class="fas fa-arrow-left"></i>
             </a>
             Employee Details
         </h2>
-        <div>
-            <span class="badge bg-{{ 'success' if employee.status == 'active' else 'danger' }} p-3">
+        <div class="dropdown">
+            <button class="btn btn-sm dropdown-toggle 
+                {% if employee.status == 'active' %}btn-success
+                {% elif employee.status == 'resigned' %}btn-warning
+                {% else %}btn-danger{% endif %}"
+                type="button"
+                data-bs-toggle="dropdown">
+
                 {{ employee.status|upper }}
-            </span>
+            </button>
+
+            <ul class="dropdown-menu">
+                <li>
+                    <a class="dropdown-item"
+                    href="{{ url_for('update_employee_status', emp_id=employee.id, status='active') }}">
+                    Active
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item"
+                    href="{{ url_for('update_employee_status', emp_id=employee.id, status='resigned') }}">
+                    Resigned
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item text-danger"
+                    href="{{ url_for('update_employee_status', emp_id=employee.id, status='terminated') }}">
+                    Terminated
+                    </a>
+                </li>
+            </ul>
         </div>
     </div>
 
@@ -80,47 +109,93 @@
         <!-- Salary & Bank Details -->
         <div class="col-md-8 mb-4">
             <div class="row">
-                <!-- Salary Details -->
+               <!-- Salary Details -->
                 <div class="col-12 mb-4">
                     <div class="card shadow">
                         <div class="card-header bg-success text-white">
-                            <h5 class="mb-0"><i class="fas fa-rupee-sign me-2"></i>Salary Details</h5>
+                            <h5 class="mb-0">
+                                <i class="fas fa-rupee-sign me-2"></i>Salary Details
+                            </h5>
                         </div>
+
                         <div class="card-body">
+
+                            <!-- Current Salary Summary -->
+                            <div class="alert alert-info mb-4">
+                                <div class="d-flex justify-content-between">
+                                    <span>
+                                        <strong>Annual CTC:</strong>
+                                        ₹{{ "{:,.2f}".format(employee.ctc) }}
+                                    </span>
+                                    <span>
+                                        <strong>Monthly CTC:</strong>
+                                        ₹{{ "{:,.2f}".format(employee.ctc / 12) }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {% set monthly = employee.ctc / 12 %}
+                            {% set basic = (monthly * 0.5) | round %}
+                            {% set hra = (basic * 0.5) | round %}
+                            {% set conveyance = (monthly * 0.05) | round %}
+                            {% set medical = (monthly * 0.014) | round %}
+                            {% set telephone = (monthly * 0.02) | round %}
+                            {% set special = (monthly - (basic + hra + conveyance + medical + telephone)) | round %}
+                            {% set professional_tax = 200 %}
+                            {% set net_salary = monthly - professional_tax %}
+
                             <div class="row">
+                                <!-- Earnings -->
                                 <div class="col-md-6">
-                                    <table class="table table-borderless">
+                                    <h6 class="text-success mb-3">Earnings</h6>
+                                    <table class="table table-sm">
                                         <tr>
-                                            <td>Annual CTC:</td>
-                                            <td class="fw-bold">₹{{ "{:,.2f}".format(employee.ctc) }}</td>
+                                            <td>Basic Salary (50%)</td>
+                                            <td class="text-end">₹{{ "{:,.2f}".format(basic) }}</td>
                                         </tr>
                                         <tr>
-                                            <td>Monthly CTC:</td>
-                                            <td class="fw-bold">₹{{ "{:,.2f}".format(employee.ctc/12) }}</td>
+                                            <td>HRA (50% of Basic)</td>
+                                            <td class="text-end">₹{{ "{:,.2f}".format(hra) }}</td>
                                         </tr>
                                         <tr>
-                                            <td>Increment/Month:</td>
-                                            <td class="fw-bold text-success">
-                                                + ₹{{ "{:,.2f}".format(employee.increment_per_month) }}
+                                            <td>Conveyance (5%)</td>
+                                            <td class="text-end">₹{{ "{:,.2f}".format(conveyance) }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Medical (1.4%)</td>
+                                            <td class="text-end">₹{{ "{:,.2f}".format(medical) }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Telephone (2%)</td>
+                                            <td class="text-end">₹{{ "{:,.2f}".format(telephone) }}</td>
+                                        </tr>
+                                        <tr class="fw-bold">
+                                            <td>Special Allowance</td>
+                                            <td class="text-end">₹{{ "{:,.2f}".format(special) }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+
+                                <!-- Deductions -->
+                                <div class="col-md-6">
+                                    <h6 class="text-danger mb-3">Deductions</h6>
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <td>Professional Tax</td>
+                                            <td class="text-end text-danger">
+                                                -₹{{ "{:,.2f}".format(professional_tax) }}
+                                            </td>
+                                        </tr>
+                                        <tr class="fw-bold">
+                                            <td>Net Monthly Salary</td>
+                                            <td class="text-end text-success">
+                                                ₹{{ "{:,.2f}".format(net_salary) }}
                                             </td>
                                         </tr>
                                     </table>
                                 </div>
-                                <div class="col-md-6">
-                                    {% set basic = (employee.ctc * 0.5) | round %}
-                                    {% set hra = (basic * 0.5) | round %}
-                                    <table class="table table-borderless">
-                                        <tr>
-                                            <td>Basic (50%):</td>
-                                            <td>₹{{ "{:,.2f}".format(basic) }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>HRA (50% of Basic):</td>
-                                            <td>₹{{ "{:,.2f}".format(hra) }}</td>
-                                        </tr>
-                                    </table>
-                                </div>
                             </div>
+
                         </div>
                     </div>
                 </div>
@@ -238,8 +313,12 @@
                                     <td>{{ doc.generated_at.strftime('%d %b %Y, %H:%M') }}</td>
                                     <td>{{ doc.generated_by }}</td>
                                     <td>
-                                        <a href="{{ url_for('serve_employee_document', emp_folder=employee.employee_id + '_' + employee.full_name|replace(' ', '_'), doc_type=doc.document_type + 's', filename=doc.filename) }}" 
-                                           class="btn btn-sm btn-success" target="_blank">
+                                        <a href="{{ url_for('serve_employee_document', 
+                                                           emp_folder=emp_folder, 
+                                                           doc_type=doc.document_type + 's', 
+                                                           filename=doc.filename) }}" 
+                                           class="btn btn-sm btn-success" 
+                                           target="_blank">
                                             <i class="fas fa-eye"></i> View
                                         </a>
                                     </td>
@@ -255,5 +334,60 @@
             </div>
         </div>
     </div>
+
+    <!-- Increment History Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Increment History</h5>
+                </div>
+                <div class="card-body">
+                    {% if increment_history and increment_history|length > 0 %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Old Increment</th>
+                                    <th>New Increment</th>
+                                    <th>Effective Date</th>
+                                    <th>Generated By</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for hist in increment_history|sort(attribute='generated_at', reverse=true) %}
+                                <tr>
+                                    <td>{{ hist.generated_at.strftime('%d/%m/%Y') if hist.generated_at else 'N/A' }}</td>
+                                    <td>₹{{ "{:,.0f}".format(hist.old_increment) }}</td>
+                                    <td class="text-success">+₹{{ "{:,.0f}".format(hist.new_increment) }}</td>
+                                    <td>{{ hist.effective_date.strftime('%d/%m/%Y') if hist.effective_date else 'N/A' }}</td>
+                                    <td>{{ hist.generated_by }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No increment history available.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<style>
+    .table td, .table th {
+        vertical-align: middle;
+    }
+    .badge {
+        font-size: 12px;
+        padding: 5px 10px;
+    }
+    .btn-sm {
+        padding: 5px 10px;
+        font-size: 12px;
+    }
+</style>
 {% endblock %}

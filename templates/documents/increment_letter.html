@@ -186,6 +186,67 @@
             margin: 0;
         }
     }
+
+    /* Salary Breakdown Styles */
+    .salary-breakdown {
+        margin: 30px 0;
+        padding: 20px;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 12px;
+        border-left: 6px solid #28a745;
+    }
+
+    .salary-breakdown h4 {
+        color: #28a745;
+        margin-bottom: 20px;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .salary-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+
+    .salary-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .salary-label {
+        color: #6c757d;
+        font-weight: 500;
+    }
+
+    .salary-value {
+        font-weight: 600;
+        color: #28a745;
+    }
+
+    .total-ctc {
+        margin-top: 20px;
+        padding: 15px;
+        background: white;
+        border-radius: 8px;
+        text-align: center;
+        border: 2px dashed #28a745;
+    }
+
+    .total-ctc .label {
+        color: #6c757d;
+        font-size: 14px;
+    }
+
+    .total-ctc .value {
+        font-size: 24px;
+        font-weight: 700;
+        color: #28a745;
+    }
 </style>
 
 <div class="increment-letter" style="font-family: 'Arial', sans-serif; max-width: 800px; margin: 0 auto; padding: 30px; position: relative; overflow: hidden;">
@@ -270,6 +331,52 @@
             endeavours.
         </p>
     </div>
+
+    <!-- Salary Breakdown Section (NEW) -->
+    {% if data.salary_breakdown %}
+    <div class="salary-breakdown">
+        <h4>📊 Revised Salary Breakdown</h4>
+        <div class="salary-grid">
+            <div class="salary-item">
+                <span class="salary-label">Basic Salary (50%):</span>
+                <span class="salary-value">₹{{ "{:,.0f}".format(data.salary_breakdown.basic|float) }}</span>
+            </div>
+            <div class="salary-item">
+                <span class="salary-label">HRA (50% of Basic):</span>
+                <span class="salary-value">₹{{ "{:,.0f}".format(data.salary_breakdown.hra|float) }}</span>
+            </div>
+            <div class="salary-item">
+                <span class="salary-label">Conveyance:</span>
+                <span class="salary-value">₹{{ "{:,.0f}".format(data.salary_breakdown.conveyance|float) }}</span>
+            </div>
+            <div class="salary-item">
+                <span class="salary-label">Medical:</span>
+                <span class="salary-value">₹{{ "{:,.0f}".format(data.salary_breakdown.medical|float) }}</span>
+            </div>
+            <div class="salary-item">
+                <span class="salary-label">Telephone:</span>
+                <span class="salary-value">₹{{ "{:,.0f}".format(data.salary_breakdown.telephone|float) }}</span>
+            </div>
+            <div class="salary-item">
+                <span class="salary-label">Special Allowance:</span>
+                <span class="salary-value">₹{{ "{:,.0f}".format(data.salary_breakdown.special_allowance|float) }}</span>
+            </div>
+            <div class="salary-item">
+                <span class="salary-label">Professional Tax:</span>
+                <span class="salary-value">-₹{{ "{:,.0f}".format(data.salary_breakdown.professional_tax|float) }}</span>
+            </div>
+            <div class="salary-item">
+                <span class="salary-label">Gross Salary:</span>
+                <span class="salary-value">₹{{ "{:,.0f}".format(data.salary_breakdown.gross_salary|float) }}</span>
+            </div>
+        </div>
+        
+        <div class="total-ctc">
+            <div class="label">New Monthly Net Salary</div>
+            <div class="value">₹{{ "{:,.0f}".format(data.salary_breakdown.net_salary|float) }}</div>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Closing -->
    <div class="row mt-5" style="margin-top: 50px;">

@@ -8,6 +8,7 @@ import os
 import io
 import zipfile
 
+from flask import redirect, url_for, flash
 from config import COMPANIES
 from werkzeug.security import generate_password_hash, check_password_hash
 from humanize import intword
@@ -42,14 +43,17 @@ class Admin(db.Model):
 
 class IncrementHistory(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    employee_id = db.Column(db.Integer, db.ForeignKey('employee.id'), nullable=False)
-    old_increment = db.Column(db.Float, default=0)
-    new_increment = db.Column(db.Float, default=0)
-    effective_date = db.Column(db.Date, nullable=True)
-    generated_by = db.Column(db.String(80))
-    generated_at = db.Column(db.DateTime, default=datetime.now)
+    employee_id = db.Column(db.Integer, db.ForeignKey('employee.id'))
     
-    employee = db.relationship('Employee', backref='increment_history')
+    old_ctc = db.Column(db.Float, nullable=False)
+    increment_amount = db.Column(db.Float, nullable=False)
+    new_ctc = db.Column(db.Float, nullable=False)
+    
+    effective_date = db.Column(db.Date)
+    generated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    generated_by = db.Column(db.String(100))
+    
+    #employee = db.relationship('Employee', backref='increment_history')
 
 #employee model
 class Employee(db.Model):
@@ -64,7 +68,7 @@ class Employee(db.Model):
     designation = db.Column(db.String(100))
     department = db.Column(db.String(100))
     ctc = db.Column(db.Float, default=0)
-    increment_per_month = db.Column(db.Float, default=0)
+    #increment_per_month = db.Column(db.Float, default=0)
     joining_date = db.Column(db.Date, nullable=True)
     resignation_date = db.Column(db.Date, nullable=True)
     status = db.Column(db.String(20), default='active')  # active, resigned, terminated
@@ -274,6 +278,7 @@ def index():
 
         full_name = request.form.get('full_name')
         aadhar_no = request.form.get('aadhar_no')
+        new_increment = float(request.form.get('increment_per_month') or 0)
 
         existing_employee = Employee.query.filter_by(
             full_name=full_name,
@@ -282,12 +287,15 @@ def index():
 
         if existing_employee:
             employee = existing_employee
+            employee.increment_per_month = new_increment
+            db.session.commit()
         else:
             employee = Employee(
                 full_name=full_name,
                 aadhar_no=aadhar_no,
                 designation=request.form.get('designation'),
-                ctc=float(request.form.get('ctc') or 0)
+                ctc=float(request.form.get('ctc') or 0),
+                increment_per_month=new_increment
             )
             db.session.add(employee)
             db.session.commit()
@@ -988,8 +996,39 @@ def admin_generate_document(emp_id, doc_type):
                 'old_increment': employee.increment_per_month
             }
 
-            #flash(f'Increment updated from {old_increment} to {increment_amount} successfully for {employee.full_name}!', 'success')
-            # Prepare form data with increment amount
+            # 🔴 ADD SALARY BREAKDOWN CALCULATIONS HERE
+            ctc = float(employee.ctc)
+            monthly_ctc = round(ctc / 12)
+            monthly_ctc_after_increment = monthly_ctc + increment_amount
+
+            basic = round(monthly_ctc_after_increment * 0.5)
+            hra = round(basic * 0.5)
+            conveyance = round(monthly_ctc_after_increment * 0.05)
+            medical = round(monthly_ctc_after_increment * 0.014)
+            telephone = round(monthly_ctc_after_increment * 0.02)
+
+            special_allowance = monthly_ctc_after_increment - (
+                basic + hra + conveyance + medical + telephone
+            )
+
+            professional_tax = 200
+            gross_salary = basic + hra + conveyance + medical + telephone + special_allowance
+            net_salary = gross_salary - professional_tax
+
+            salary_breakdown = {
+                'basic': basic,
+                'hra': hra,
+                'conveyance': conveyance,
+                'medical': medical,
+                'telephone': telephone,
+                'special_allowance': special_allowance,
+                'professional_tax': professional_tax,
+                'gross_salary': gross_salary,
+                'net_salary': net_salary,
+                'increment_per_month': increment_amount
+            }
+
+            # Prepare form data with increment amount and salary breakdown
             form_data = {
                 'employee_id': employee.employee_id,
                 'company': company_id,
@@ -1001,6 +1040,7 @@ def admin_generate_document(emp_id, doc_type):
                 'designation': employee.designation,
                 'ctc': employee.ctc,
                 'increment_per_month': increment_amount,
+                'salary_breakdown': salary_breakdown,  # 🔴 ADD THIS
                 'increment_effective_date': effective_date,
                 'joining_date': employee.joining_date.strftime('%Y-%m-%d') if employee.joining_date else None,
                 'resignation_date': employee.resignation_date.strftime('%Y-%m-%d') if employee.resignation_date else None,
@@ -1031,6 +1071,38 @@ def admin_generate_document(emp_id, doc_type):
             session['selected_months'] = selected_months
             session['selected_year'] = request.form.get('year', datetime.now().year)
 
+        # 🔴 ADD SALARY BREAKDOWN FOR OTHER DOCUMENTS IF NEEDED
+        ctc = float(employee.ctc)
+        monthly_ctc = round(ctc / 12)
+        monthly_ctc_after_increment = monthly_ctc + employee.increment_per_month
+
+        basic = round(monthly_ctc_after_increment * 0.5)
+        hra = round(basic * 0.5)
+        conveyance = round(monthly_ctc_after_increment * 0.05)
+        medical = round(monthly_ctc_after_increment * 0.014)
+        telephone = round(monthly_ctc_after_increment * 0.02)
+
+        special_allowance = monthly_ctc_after_increment - (
+            basic + hra + conveyance + medical + telephone
+        )
+
+        professional_tax = 200
+        gross_salary = basic + hra + conveyance + medical + telephone + special_allowance
+        net_salary = gross_salary - professional_tax
+
+        salary_breakdown = {
+            'basic': basic,
+            'hra': hra,
+            'conveyance': conveyance,
+            'medical': medical,
+            'telephone': telephone,
+            'special_allowance': special_allowance,
+            'professional_tax': professional_tax,
+            'gross_salary': gross_salary,
+            'net_salary': net_salary,
+            'increment_per_month': employee.increment_per_month
+        }
+
         # Prepare form data from employee records
         form_data = {
             'employee_id': employee.employee_id,
@@ -1043,6 +1115,7 @@ def admin_generate_document(emp_id, doc_type):
             'designation': employee.designation,
             'ctc': employee.ctc,
             'increment_per_month': employee.increment_per_month,
+            'salary_breakdown': salary_breakdown,  # 🔴 ADD THIS
             'joining_date': employee.joining_date.strftime('%Y-%m-%d') if employee.joining_date else None,
             'resignation_date': employee.resignation_date.strftime('%Y-%m-%d') if employee.resignation_date else None,
             'bank_details': {
@@ -1060,6 +1133,38 @@ def admin_generate_document(emp_id, doc_type):
     if doc_type == 'salary_slip':
         return render_template('select_months.html', employee=employee, companies=COMPANIES)
     
+    # 🔴 ADD SALARY BREAKDOWN FOR GET REQUESTS
+    ctc = float(employee.ctc)
+    monthly_ctc = round(ctc / 12)
+    monthly_ctc_after_increment = monthly_ctc + employee.increment_per_month
+
+    basic = round(monthly_ctc_after_increment * 0.5)
+    hra = round(basic * 0.5)
+    conveyance = round(monthly_ctc_after_increment * 0.05)
+    medical = round(monthly_ctc_after_increment * 0.014)
+    telephone = round(monthly_ctc_after_increment * 0.02)
+
+    special_allowance = monthly_ctc_after_increment - (
+        basic + hra + conveyance + medical + telephone
+    )
+
+    professional_tax = 200
+    gross_salary = basic + hra + conveyance + medical + telephone + special_allowance
+    net_salary = gross_salary - professional_tax
+
+    salary_breakdown = {
+        'basic': basic,
+        'hra': hra,
+        'conveyance': conveyance,
+        'medical': medical,
+        'telephone': telephone,
+        'special_allowance': special_allowance,
+        'professional_tax': professional_tax,
+        'gross_salary': gross_salary,
+        'net_salary': net_salary,
+        'increment_per_month': employee.increment_per_month
+    }
+
     # For other documents (GET request), directly generate with default company
     form_data = {
         'employee_id': employee.employee_id,
@@ -1072,6 +1177,7 @@ def admin_generate_document(emp_id, doc_type):
         'designation': employee.designation,
         'ctc': employee.ctc,
         'increment_per_month': employee.increment_per_month,
+        'salary_breakdown': salary_breakdown,  # 🔴 ADD THIS
         'joining_date': employee.joining_date.strftime('%Y-%m-%d') if employee.joining_date else None,
         'resignation_date': employee.resignation_date.strftime('%Y-%m-%d') if employee.resignation_date else None,
         'bank_details': {
@@ -1091,24 +1197,58 @@ def view_employee(emp_id):
     if not session.get('is_admin'):
         return redirect(url_for('admin_login'))
     
+    # Force a fresh query without caching
+    db.session.expire_all()
+    
     employee = Employee.query.get_or_404(emp_id)
+    
+    # Explicitly query documents to ensure fresh data
     documents = Document.query.filter_by(employee_id=emp_id).order_by(Document.generated_at.desc()).all()
     
-    return render_template('view_employee.html', employee=employee, documents=documents)
+    # Explicitly query increment history to ensure fresh data
+    increment_history = IncrementHistory.query.filter_by(employee_id=emp_id).order_by(IncrementHistory.generated_at.desc()).all()
+    
+    # Generate folder name for employee documents
+    employee_folder = get_employee_folder_name(employee)
+    
+    return render_template('view_employee.html', 
+                         employee=employee, 
+                         documents=documents,
+                         increment_history=increment_history,
+                         employee_folder=employee_folder)
 
-# Add this route for serving employee documents
+# Serve employee documents
 @app.route('/employee_docs/<emp_folder>/<doc_type>/<filename>')
 def serve_employee_document(emp_folder, doc_type, filename):
     if not session.get('is_admin'):
         return "Unauthorized", 403
-        
-    base_storage = os.path.join(app.root_path, 'employee_documents')
-    folder_path = os.path.join(base_storage, emp_folder, doc_type)
     
-    if not os.path.exists(os.path.join(folder_path, filename)):
-        return "File not found", 404
-        
-    return send_from_directory(folder_path, filename)
+    # Construct the path to the document
+    # emp_folder format: EMP0001_John_Doe
+    base_storage = os.path.join(app.root_path, 'generated_docs', 'employee_documents')
+    
+    # Try both possible structures
+    possible_paths = [
+        os.path.join(base_storage, emp_folder, doc_type, filename),  # With subfolder
+        os.path.join(base_storage, emp_folder, filename)  # Without subfolder
+    ]
+    
+    for folder_path in possible_paths:
+        if os.path.exists(folder_path):
+            directory = os.path.dirname(folder_path)
+            return send_from_directory(directory, filename)
+    
+    # If file not found, try to find it in the database
+    document = Document.query.filter_by(filename=filename).first()
+    if document and os.path.exists(document.file_path):
+        directory = os.path.dirname(document.file_path)
+        return send_from_directory(directory, filename)
+    
+    return "File not found", 404
+
+def get_employee_folder_name(employee):
+    """Generate folder name for employee documents"""
+    return f"{employee.employee_id}_{employee.full_name.replace(' ', '_')}"
 
 # Add employee route
 @app.route('/admin/employee/add', methods=['GET', 'POST'])
@@ -1200,6 +1340,60 @@ def process_payment(payment_id):
     except Exception as e:
         db.session.rollback()
         return {'success': False, 'message': str(e)}, 500
+
+#increment route
+@app.route('/admin/give-increment/<int:emp_id>', methods=['POST'])
+def give_increment(emp_id):
+    employee = Employee.query.get_or_404(emp_id)
+
+    increment_per_month = float(request.form['increment_per_month'])
+
+    old_ctc = employee.ctc
+    annual_increment = increment_per_month * 12
+    new_ctc = old_ctc + annual_increment
+
+    # 1️⃣ Update Employee CTC permanently
+    employee.ctc = new_ctc
+
+    # 2️⃣ Store in history
+    history = IncrementHistory(
+        employee_id=emp_id,
+        old_ctc=old_ctc,
+        increment_amount=increment_per_month,
+        new_ctc=new_ctc,
+        effective_date=datetime.today(),
+        generated_by=session.get('admin_username')
+    )
+
+    db.session.add(history)
+    db.session.commit()
+
+    return redirect(url_for('view_employee', emp_id=emp_id))
+
+#update employee status
+@app.route('/employee/<int:emp_id>/update-status/<string:status>')
+def update_employee_status(emp_id, status):
+    employee = Employee.query.get_or_404(emp_id)
+
+    # Only allow valid statuses
+    if status not in ['active', 'resigned', 'terminated']:
+        flash("Invalid status", "danger")
+        return redirect(url_for('employee_details', emp_id=emp_id))
+
+    employee.status = status
+
+    # If resigned → set resignation date
+    if status == 'resigned':
+        employee.resignation_date = datetime.today().date()
+
+    # If active again → clear resignation date
+    if status == 'active':
+        employee.resignation_date = None
+
+    db.session.commit()
+
+    flash("Employee status updated successfully!", "success")
+    return redirect(url_for('view_employee', emp_id=emp_id))
 
 if __name__ == '__main__':
     with app.app_context():
