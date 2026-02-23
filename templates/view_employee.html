@@ -1,8 +1,6 @@
 {% extends "base.html" %}
 
 {% block content %}
-
-
 <div class="container-fluid py-4">
     <!-- Header with Back Button -->
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -19,29 +17,12 @@
                 {% else %}btn-danger{% endif %}"
                 type="button"
                 data-bs-toggle="dropdown">
-
                 {{ employee.status|upper }}
             </button>
-
             <ul class="dropdown-menu">
-                <li>
-                    <a class="dropdown-item"
-                    href="{{ url_for('update_employee_status', emp_id=employee.id, status='active') }}">
-                    Active
-                    </a>
-                </li>
-                <li>
-                    <a class="dropdown-item"
-                    href="{{ url_for('update_employee_status', emp_id=employee.id, status='resigned') }}">
-                    Resigned
-                    </a>
-                </li>
-                <li>
-                    <a class="dropdown-item text-danger"
-                    href="{{ url_for('update_employee_status', emp_id=employee.id, status='terminated') }}">
-                    Terminated
-                    </a>
-                </li>
+                <li><a class="dropdown-item" href="{{ url_for('update_employee_status', emp_id=employee.id, status='active') }}">Active</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('update_employee_status', emp_id=employee.id, status='resigned') }}">Resigned</a></li>
+                <li><a class="dropdown-item text-danger" href="{{ url_for('update_employee_status', emp_id=employee.id, status='terminated') }}">Terminated</a></li>
             </ul>
         </div>
     </div>
@@ -66,42 +47,12 @@
                     <p class="mb-0">{{ employee.employee_id }}</p>
                 </div>
                 <div class="card-body">
-                    <div class="mb-3">
-                        <label class="text-muted">Email</label>
-                        <p class="fw-bold">{{ employee.email or 'N/A' }}</p>
-                    </div>
-                    <div class="mb-3">
-                        <label class="text-muted">Phone</label>
-                        <p class="fw-bold">{{ employee.phone or 'N/A' }}</p>
-                    </div>
-                    <div class="mb-3">
-                        <label class="text-muted">Designation</label>
-                        <p class="fw-bold">{{ employee.designation }}</p>
-                    </div>
-                    <div class="mb-3">
-                        <label class="text-muted">Department</label>
-                        <p class="fw-bold">{{ employee.department or 'N/A' }}</p>
-                    </div>
-                    <div class="mb-3">
-                        <label class="text-muted">Joining Date</label>
-                        <p class="fw-bold">
-                            {% if employee.joining_date %}
-                                {{ employee.joining_date.strftime('%d %B %Y') }}
-                            {% else %}
-                                N/A
-                            {% endif %}
-                        </p>
-                    </div>
-                    <div class="mb-3">
-                        <label class="text-muted">Resignation Date</label>
-                        <p class="fw-bold">
-                            {% if employee.resignation_date %}
-                                {{ employee.resignation_date.strftime('%d %B %Y') }}
-                            {% else %}
-                                N/A
-                            {% endif %}
-                        </p>
-                    </div>
+                    <div class="mb-3"><label class="text-muted">Email</label><p class="fw-bold">{{ employee.email or 'N/A' }}</p></div>
+                    <div class="mb-3"><label class="text-muted">Phone</label><p class="fw-bold">{{ employee.phone or 'N/A' }}</p></div>
+                    <div class="mb-3"><label class="text-muted">Designation</label><p class="fw-bold">{{ employee.designation }}</p></div>
+                    <div class="mb-3"><label class="text-muted">Department</label><p class="fw-bold">{{ employee.department or 'N/A' }}</p></div>
+                    <div class="mb-3"><label class="text-muted">Joining Date</label><p class="fw-bold">{% if employee.joining_date %}{{ employee.joining_date.strftime('%d %B %Y') }}{% else %}N/A{% endif %}</p></div>
+                    <div class="mb-3"><label class="text-muted">Resignation Date</label><p class="fw-bold">{% if employee.resignation_date %}{{ employee.resignation_date.strftime('%d %B %Y') }}{% else %}N/A{% endif %}</p></div>
                 </div>
             </div>
         </div>
@@ -109,28 +60,17 @@
         <!-- Salary & Bank Details -->
         <div class="col-md-8 mb-4">
             <div class="row">
-               <!-- Salary Details -->
+                <!-- Salary Details -->
                 <div class="col-12 mb-4">
                     <div class="card shadow">
                         <div class="card-header bg-success text-white">
-                            <h5 class="mb-0">
-                                <i class="fas fa-rupee-sign me-2"></i>Salary Details
-                            </h5>
+                            <h5 class="mb-0"><i class="fas fa-rupee-sign me-2"></i>Salary Details</h5>
                         </div>
-
                         <div class="card-body">
-
-                            <!-- Current Salary Summary -->
                             <div class="alert alert-info mb-4">
                                 <div class="d-flex justify-content-between">
-                                    <span>
-                                        <strong>Annual CTC:</strong>
-                                        ₹{{ "{:,.2f}".format(employee.ctc) }}
-                                    </span>
-                                    <span>
-                                        <strong>Monthly CTC:</strong>
-                                        ₹{{ "{:,.2f}".format(employee.ctc / 12) }}
-                                    </span>
+                                    <span><strong>Annual CTC:</strong> ₹{{ "{:,.2f}".format(employee.ctc) }}</span>
+                                    <span><strong>Monthly CTC:</strong> ₹{{ "{:,.2f}".format(employee.ctc / 12) }}</span>
                                 </div>
                             </div>
 
@@ -145,57 +85,25 @@
                             {% set net_salary = monthly - professional_tax %}
 
                             <div class="row">
-                                <!-- Earnings -->
                                 <div class="col-md-6">
                                     <h6 class="text-success mb-3">Earnings</h6>
                                     <table class="table table-sm">
-                                        <tr>
-                                            <td>Basic Salary (50%)</td>
-                                            <td class="text-end">₹{{ "{:,.2f}".format(basic) }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>HRA (50% of Basic)</td>
-                                            <td class="text-end">₹{{ "{:,.2f}".format(hra) }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Conveyance (5%)</td>
-                                            <td class="text-end">₹{{ "{:,.2f}".format(conveyance) }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Medical (1.4%)</td>
-                                            <td class="text-end">₹{{ "{:,.2f}".format(medical) }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Telephone (2%)</td>
-                                            <td class="text-end">₹{{ "{:,.2f}".format(telephone) }}</td>
-                                        </tr>
-                                        <tr class="fw-bold">
-                                            <td>Special Allowance</td>
-                                            <td class="text-end">₹{{ "{:,.2f}".format(special) }}</td>
-                                        </tr>
+                                        <tr><td>Basic Salary (50%)</td><td class="text-end">₹{{ "{:,.2f}".format(basic) }}</td></tr>
+                                        <tr><td>HRA (50% of Basic)</td><td class="text-end">₹{{ "{:,.2f}".format(hra) }}</td></tr>
+                                        <tr><td>Conveyance (5%)</td><td class="text-end">₹{{ "{:,.2f}".format(conveyance) }}</td></tr>
+                                        <tr><td>Medical (1.4%)</td><td class="text-end">₹{{ "{:,.2f}".format(medical) }}</td></tr>
+                                        <tr><td>Telephone (2%)</td><td class="text-end">₹{{ "{:,.2f}".format(telephone) }}</td></tr>
+                                        <tr class="fw-bold"><td>Special Allowance</td><td class="text-end">₹{{ "{:,.2f}".format(special) }}</td></tr>
                                     </table>
                                 </div>
-
-                                <!-- Deductions -->
                                 <div class="col-md-6">
                                     <h6 class="text-danger mb-3">Deductions</h6>
                                     <table class="table table-sm">
-                                        <tr>
-                                            <td>Professional Tax</td>
-                                            <td class="text-end text-danger">
-                                                -₹{{ "{:,.2f}".format(professional_tax) }}
-                                            </td>
-                                        </tr>
-                                        <tr class="fw-bold">
-                                            <td>Net Monthly Salary</td>
-                                            <td class="text-end text-success">
-                                                ₹{{ "{:,.2f}".format(net_salary) }}
-                                            </td>
-                                        </tr>
+                                        <tr><td>Professional Tax</td><td class="text-end text-danger">-₹{{ "{:,.2f}".format(professional_tax) }}</td></tr>
+                                        <tr class="fw-bold"><td>Net Monthly Salary</td><td class="text-end text-success">₹{{ "{:,.2f}".format(net_salary) }}</td></tr>
                                     </table>
                                 </div>
                             </div>
-
                         </div>
                     </div>
                 </div>
@@ -203,37 +111,20 @@
                 <!-- Bank Details -->
                 <div class="col-12 mb-4">
                     <div class="card shadow">
-                        <div class="card-header bg-info text-white">
-                            <h5 class="mb-0"><i class="fas fa-university me-2"></i>Bank Details</h5>
-                        </div>
+                        <div class="card-header bg-info text-white"><h5 class="mb-0"><i class="fas fa-university me-2"></i>Bank Details</h5></div>
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-6">
                                     <table class="table table-borderless">
-                                        <tr>
-                                            <td>Account Holder:</td>
-                                            <td class="fw-bold">{{ employee.account_holder or 'N/A' }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Account Number:</td>
-                                            <td class="fw-bold">{{ employee.account_number or 'N/A' }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Bank Name:</td>
-                                            <td class="fw-bold">{{ employee.bank_name or 'N/A' }}</td>
-                                        </tr>
+                                        <tr><td>Account Holder:</td><td class="fw-bold">{{ employee.account_holder or 'N/A' }}</td></tr>
+                                        <tr><td>Account Number:</td><td class="fw-bold">{{ employee.account_number or 'N/A' }}</td></tr>
+                                        <tr><td>Bank Name:</td><td class="fw-bold">{{ employee.bank_name or 'N/A' }}</td></tr>
                                     </table>
                                 </div>
                                 <div class="col-md-6">
                                     <table class="table table-borderless">
-                                        <tr>
-                                            <td>Branch:</td>
-                                            <td class="fw-bold">{{ employee.branch or 'N/A' }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>IFSC Code:</td>
-                                            <td class="fw-bold">{{ employee.ifsc_code or 'N/A' }}</td>
-                                        </tr>
+                                        <tr><td>Branch:</td><td class="fw-bold">{{ employee.branch or 'N/A' }}</td></tr>
+                                        <tr><td>IFSC Code:</td><td class="fw-bold">{{ employee.ifsc_code or 'N/A' }}</td></tr>
                                     </table>
                                 </div>
                             </div>
@@ -244,27 +135,11 @@
                 <!-- Personal Documents -->
                 <div class="col-12">
                     <div class="card shadow">
-                        <div class="card-header bg-warning">
-                            <h5 class="mb-0"><i class="fas fa-id-card me-2"></i>Personal Documents</h5>
-                        </div>
+                        <div class="card-header bg-warning"><h5 class="mb-0"><i class="fas fa-id-card me-2"></i>Personal Documents</h5></div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-6">
-                                    <table class="table table-borderless">
-                                        <tr>
-                                            <td>Aadhar Number:</td>
-                                            <td class="fw-bold">{{ employee.aadhar_no or 'N/A' }}</td>
-                                        </tr>
-                                    </table>
-                                </div>
-                                <div class="col-md-6">
-                                    <table class="table table-borderless">
-                                        <tr>
-                                            <td>PAN Number:</td>
-                                            <td class="fw-bold">{{ employee.pan_no or 'N/A' }}</td>
-                                        </tr>
-                                    </table>
-                                </div>
+                                <div class="col-md-6"><table class="table table-borderless"><tr><td>Aadhar Number:</td><td class="fw-bold">{{ employee.aadhar_no or 'N/A' }}</td></tr></table></div>
+                                <div class="col-md-6"><table class="table table-borderless"><tr><td>PAN Number:</td><td class="fw-bold">{{ employee.pan_no or 'N/A' }}</td></tr></table></div>
                             </div>
                         </div>
                     </div>
@@ -277,9 +152,7 @@
     <div class="row mt-4">
         <div class="col-12">
             <div class="card shadow">
-                <div class="card-header bg-secondary text-white">
-                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Generated Documents</h5>
-                </div>
+                <div class="card-header bg-secondary text-white"><h5 class="mb-0"><i class="fas fa-history me-2"></i>Generated Documents</h5></div>
                 <div class="card-body">
                     {% if documents %}
                     <div class="table-responsive">
@@ -291,36 +164,28 @@
                                     <th>Month/Year</th>
                                     <th>Generated Date</th>
                                     <th>Generated By</th>
-                                    <th>Action</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for doc in documents %}
                                 <tr>
-                                    <td>
-                                        <span class="badge bg-primary">
-                                            {{ doc.document_type.replace('_', ' ')|title }}
-                                        </span>
-                                    </td>
+                                    <td><span class="badge bg-primary">{{ doc.document_type.replace('_', ' ')|title }}</span></td>
                                     <td>{{ doc.filename }}</td>
-                                    <td>
-                                        {% if doc.month and doc.year %}
-                                            {{ doc.month }} {{ doc.year }}
-                                        {% else %}
-                                            -
-                                        {% endif %}
-                                    </td>
+                                    <td>{% if doc.month and doc.year %}{{ doc.month }} {{ doc.year }}{% else %}-{% endif %}</td>
                                     <td>{{ doc.generated_at.strftime('%d %b %Y, %H:%M') }}</td>
                                     <td>{{ doc.generated_by }}</td>
                                     <td>
-                                        <a href="{{ url_for('serve_employee_document', 
-                                                           emp_folder=emp_folder, 
-                                                           doc_type=doc.document_type + 's', 
-                                                           filename=doc.filename) }}" 
-                                           class="btn btn-sm btn-success" 
-                                           target="_blank">
-                                            <i class="fas fa-eye"></i> View
+                                        <a href="{{ url_for('serve_employee_document', emp_folder=emp_folder, doc_type=doc.document_type + 's', filename=doc.filename) }}" 
+                                           class="btn btn-sm btn-success" target="_blank">
+                                            <i class="fas fa-eye"></i> Local
                                         </a>
+                                        {% if doc.drive_file_id %}
+                                        <a href="https://drive.google.com/file/d/{{ doc.drive_file_id }}/view" 
+                                           class="btn btn-sm btn-info" target="_blank">
+                                            <i class="fab fa-google-drive"></i> Drive
+                                        </a>
+                                        {% endif %}
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -339,9 +204,7 @@
     <div class="row mt-4">
         <div class="col-12">
             <div class="card shadow">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Increment History</h5>
-                </div>
+                <div class="card-header bg-info text-white"><h5 class="mb-0"><i class="fas fa-history me-2"></i>Increment History</h5></div>
                 <div class="card-body">
                     {% if increment_history and increment_history|length > 0 %}
                     <div class="table-responsive">
@@ -349,8 +212,9 @@
                             <thead>
                                 <tr>
                                     <th>Date</th>
-                                    <th>Old Increment</th>
-                                    <th>New Increment</th>
+                                    <th>Old CTC (₹)</th>
+                                    <th>Increment/Month (₹)</th>
+                                    <th>New CTC (₹)</th>
                                     <th>Effective Date</th>
                                     <th>Generated By</th>
                                 </tr>
@@ -359,8 +223,9 @@
                                 {% for hist in increment_history|sort(attribute='generated_at', reverse=true) %}
                                 <tr>
                                     <td>{{ hist.generated_at.strftime('%d/%m/%Y') if hist.generated_at else 'N/A' }}</td>
-                                    <td>₹{{ "{:,.0f}".format(hist.old_increment) }}</td>
-                                    <td class="text-success">+₹{{ "{:,.0f}".format(hist.new_increment) }}</td>
+                                    <td>₹{{ "{:,.0f}".format(hist.old_ctc) }}</td>
+                                    <td class="text-success">+₹{{ "{:,.0f}".format(hist.increment_amount) }}</td>
+                                    <td>₹{{ "{:,.0f}".format(hist.new_ctc) }}</td>
                                     <td>{{ hist.effective_date.strftime('%d/%m/%Y') if hist.effective_date else 'N/A' }}</td>
                                     <td>{{ hist.generated_by }}</td>
                                 </tr>
@@ -378,16 +243,8 @@
 </div>
 
 <style>
-    .table td, .table th {
-        vertical-align: middle;
-    }
-    .badge {
-        font-size: 12px;
-        padding: 5px 10px;
-    }
-    .btn-sm {
-        padding: 5px 10px;
-        font-size: 12px;
-    }
+    .table td, .table th { vertical-align: middle; }
+    .badge { font-size: 12px; padding: 5px 10px; }
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
 </style>
 {% endblock %}

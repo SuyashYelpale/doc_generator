@@ -563,6 +563,21 @@
     <div class="admin-content">
         <!-- Header -->
         <div class="content-header">
+            <div class="header-actions">
+                {% if check_drive_connection() %}
+                    <span class="badge bg-success me-2">
+                        <i class="fas fa-check-circle"></i> Drive Connected
+                    </span>
+                    <a href="{{ url_for('disconnect_drive') }}" class="btn btn-sm btn-outline-danger me-2">
+                        Disconnect Drive
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('authorize') }}" class="btn btn-sm btn-primary me-2">
+                        <i class="fab fa-google-drive"></i> Connect Google Drive
+                    </a>
+                {% endif %}
+                <span class="text-muted">{{ now.strftime('%d %B %Y') }}</span>
+            </div>
             <h2>
                 {% if active_tab == 'dashboard' %}
                     Dashboard Overview
@@ -622,8 +637,13 @@
                         <h3>Recent Employees</h3>
                     </div>
                     <div class="employee-list" style="max-height: 400px; overflow-y: auto;">
+                        <script>
+                            function goToDocumentGenerator(empId) {
+                                window.location.href = "{{ url_for('admin_dashboard', tab='document_generator') }}" + "&emp_id=" + empId;
+                            }
+                        </script>
                         {% for item in employees[:5] %}
-                        <div class="employee-select-item">
+                        <div class="employee-select-item" onclick="goToDocumentGenerator('{{ item.employee.id }}')">
                             <h5>{{ item.employee.full_name }}</h5>
                             <p>{{ item.employee.designation }} | {{ item.employee.employee_id }}</p>
                             <small class="text-muted">Joined: {{ item.employee.joining_date.strftime('%d %b %Y') if item.employee.joining_date else 'N/A' }}</small>

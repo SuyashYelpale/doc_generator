@@ -1,10 +1,12 @@
+import os
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = '1'
 from flask import Flask, flash, render_template, request, redirect, url_for, session, send_file, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from xhtml2pdf import pisa
 from flask_migrate import Migrate
 from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
-import os
 import io
 import zipfile
 
@@ -12,6 +14,12 @@ from flask import redirect, url_for, flash
 from config import COMPANIES
 from werkzeug.security import generate_password_hash, check_password_hash
 from humanize import intword
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import Flow
+import pickle
 
 app = Flask(__name__)
 app.secret_key = "super-secret-key"
@@ -19,6 +27,13 @@ app.secret_key = "super-secret-key"
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///documents.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, "generated_docs")
+# Google Drive Configuration
+app.config['GOOGLE_DRIVE_TOKEN_FOLDER'] = os.path.join(app.root_path, "tokens")
+os.makedirs(app.config['GOOGLE_DRIVE_TOKEN_FOLDER'], exist_ok=True)
+
+CLIENT_SECRETS_FILE = "credentials.json"  # Download this from Google Cloud Console
+SCOPES = ['https://www.googleapis.com/auth/drive.file']
+REDIRECT_URI = 'http://localhost:5000/oauth2callback'
 os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], "employee_documents"), exist_ok=True)
 os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], "profiles"), exist_ok=True)
 
@@ -43,7 +58,7 @@ class Admin(db.Model):
 
 class IncrementHistory(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    employee_id = db.Column(db.Integer, db.ForeignKey('employee.id'))
+    employee_id = db.Column(db.Integer, db.ForeignKey('employee.id'), nullable=False)
     
     old_ctc = db.Column(db.Float, nullable=False)
     increment_amount = db.Column(db.Float, nullable=False)
@@ -53,7 +68,7 @@ class IncrementHistory(db.Model):
     generated_at = db.Column(db.DateTime, default=datetime.utcnow)
     generated_by = db.Column(db.String(100))
     
-    #employee = db.relationship('Employee', backref='increment_history')
+    employee = db.relationship('Employee', backref='increment_history')
 
 #employee model
 class Employee(db.Model):
@@ -68,7 +83,7 @@ class Employee(db.Model):
     designation = db.Column(db.String(100))
     department = db.Column(db.String(100))
     ctc = db.Column(db.Float, default=0)
-    #increment_per_month = db.Column(db.Float, default=0)
+    # increment_per_month removed – use IncrementHistory to track increments
     joining_date = db.Column(db.Date, nullable=True)
     resignation_date = db.Column(db.Date, nullable=True)
     status = db.Column(db.String(20), default='active')  # active, resigned, terminated
@@ -97,6 +112,7 @@ class Document(db.Model):
     year = db.Column(db.Integer, nullable=True)
     generated_at = db.Column(db.DateTime, default=datetime.now)
     generated_by = db.Column(db.String(80))
+    drive_file_id = db.Column(db.String(100), nullable=True)  # To store Google Drive file ID
 
 class Payment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -278,7 +294,6 @@ def index():
 
         full_name = request.form.get('full_name')
         aadhar_no = request.form.get('aadhar_no')
-        new_increment = float(request.form.get('increment_per_month') or 0)
 
         existing_employee = Employee.query.filter_by(
             full_name=full_name,
@@ -287,18 +302,16 @@ def index():
 
         if existing_employee:
             employee = existing_employee
-            employee.increment_per_month = new_increment
-            db.session.commit()
+            # No increment_per_month to update
         else:
             employee = Employee(
                 full_name=full_name,
                 aadhar_no=aadhar_no,
                 designation=request.form.get('designation'),
-                ctc=float(request.form.get('ctc') or 0),
-                increment_per_month=new_increment
+                ctc=float(request.form.get('ctc') or 0)
             )
             db.session.add(employee)
-            db.session.commit()
+        db.session.commit()
 
         employee_id = f"EMP{employee.id:04d}"
 
@@ -314,7 +327,7 @@ def index():
             'resignation_date': request.form.get('resignation_date'),  # Keep as string
             'designation': request.form.get('designation'),
             'ctc': request.form.get('ctc') or 0,
-            'increment_per_month': request.form.get('increment_per_month') or 0,
+            # increment_per_month removed
             'bank_details': {
                 'account_holder': request.form.get('account_holder'),
                 'account_number': request.form.get('account_number'),
@@ -371,7 +384,9 @@ def preview():
         return "Company not found", 404
 
     ctc = float(form_data.get('ctc') or 0)
-    increment_per_month = float(form_data.get('increment_per_month') or 0)
+    # increment_per_month no longer used in salary breakdown for preview? 
+    # For increment letter, we will have a separate amount in form_data
+    increment_per_month = float(form_data.get('increment_per_month', 0))
 
     monthly_ctc = round(ctc / 12)
     monthly_ctc_after_increment = monthly_ctc + increment_per_month
@@ -562,37 +577,37 @@ def generate():
 
     if not form_data:
         return redirect(url_for('index'))
-    
-    # DEFINE doc_type HERE FIRST
+
+    # ✅ Safe upload flag (NO name conflict)
+    upload_to_drive_flag = request.form.get('upload_to_drive') == 'true'
+
     doc_type = form_data.get('document_type')
-    
+
     print("=" * 50)
     print("GENERATE ROUTE STARTED")
-    print(f"Document type: {doc_type}")  # Now this works
-    print(f"Session data: {dict(session)}")
+    print(f"Document type: {doc_type}")
+    print(f"Upload to Drive: {upload_to_drive_flag}")
     print("=" * 50)
 
-    # Convert string dates to date objects for calculations
     form_data = convert_dates(form_data)
 
-    # Find employee
+    # -------------------------
+    # FIND EMPLOYEE
+    # -------------------------
     employee = None
     if 'employee_id' in form_data:
-        employee = Employee.query.filter_by(employee_id=form_data.get('employee_id')).first()
-        print(f"Found employee: {employee}")  # Debug print
-    
+        employee = Employee.query.filter_by(
+            employee_id=form_data.get('employee_id')
+        ).first()
+
     employee_id = secure_filename(form_data.get('employee_id', 'unknown'))
     base_folder = os.path.join(app.config['UPLOAD_FOLDER'], "employee_documents")
     employee_folder = os.path.join(base_folder, employee_id)
     os.makedirs(employee_folder, exist_ok=True)
 
-    doc_type = form_data.get('document_type')
-    print(f"Document type: {doc_type}")  # Debug print
-
     # -------------------------
-    # SALARY CALCULATION LOGIC
+    # SALARY CALCULATION
     # -------------------------
-
     ctc = float(form_data.get('ctc') or 0)
     increment_per_month = float(form_data.get('increment_per_month') or 0)
 
@@ -633,44 +648,55 @@ def generate():
     # -------------------------
     # DATE FORMATTING
     # -------------------------
-    
-    # Format dates for display
-    form_data['formatted_joining_date'] = format_date(form_data.get('joining_date'))
-    
+    form_data['formatted_joining_date'] = format_date(
+        form_data.get('joining_date')
+    )
+
     resignation_date = form_data.get('resignation_date')
+
     if resignation_date:
         form_data['formatted_resignation_date'] = format_date(resignation_date)
+
         if isinstance(resignation_date, str):
-            relieving_date = datetime.strptime(resignation_date, "%Y-%m-%d").date() + timedelta(days=30)
+            relieving_date = datetime.strptime(
+                resignation_date, "%Y-%m-%d"
+            ).date() + timedelta(days=30)
         else:
             relieving_date = resignation_date + timedelta(days=30)
+
         form_data['relieving_date'] = format_date(relieving_date)
     else:
         form_data['formatted_resignation_date'] = None
         form_data['relieving_date'] = None
 
-    company = next((c for c in COMPANIES if c['id'] == form_data.get('company')), None)
+    company = next(
+        (c for c in COMPANIES if c['id'] == form_data.get('company')),
+        None
+    )
+
     watermark_logo = get_watermark_logo(company['id']) if company else 'lc_logo.png'
 
     # -------------------------
-    # CHECK FOR PENDING INCREMENT
+    # CHECK PENDING INCREMENT
     # -------------------------
     should_update_increment = False
     pending = None
+
     if doc_type == 'increment_letter' and 'pending_increment' in session:
         should_update_increment = True
         pending = session['pending_increment']
-        print(f"Pending increment found: {pending}")  # Debug print
 
-    # -------------------------
-    # SALARY SLIP (MULTIPLE MONTHS ZIP)
-    # -------------------------
-
+    # ======================================================
+    # ✅ SALARY SLIP (MULTIPLE MONTHS ZIP)
+    # ======================================================
     if doc_type == "salary_slip" and selected_months:
+
         zip_buffer = io.BytesIO()
+        uploaded_files = []
         files_generated = False
 
         with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
+
             for month in selected_months:
                 form_data_copy = form_data.copy()
                 form_data_copy['month'] = month
@@ -688,8 +714,7 @@ def generate():
                 if html_to_pdf(html, filepath):
                     files_generated = True
                     zip_file.write(filepath, filename)
-                    
-                    # Save document record
+
                     if employee:
                         doc = Document(
                             employee_id=employee.id,
@@ -701,32 +726,51 @@ def generate():
                             generated_by=session.get('admin_username', 'system')
                         )
                         db.session.add(doc)
-                        print(f"Document record added for {month}")  # Debug print
+                        db.session.flush()
+
+                        # ✅ SAFE DRIVE UPLOAD
+                        if upload_to_drive_flag and employee:
+                            try:
+                                drive_file_id = upload_file_to_drive(
+                                    file_path=filepath,
+                                    filename=filename,
+                                    folder_name=f"Salary Slips/{month}",
+                                    employee_name=employee.full_name,
+                                    employee_id=employee.employee_id
+                                )
+
+                                doc.drive_file_id = drive_file_id
+                                uploaded_files.append(filename)
+
+                            except Exception as e:
+                                print("Drive Upload Error:", e)
+                                flash(f'{filename} upload failed', 'warning')
 
         if files_generated:
-            # ✅ FILES GENERATED SUCCESSFULLY
             db.session.commit()
             zip_buffer.seek(0)
-            
-            # Clear session data
+
             session.pop('form_data', None)
             session.pop('selected_months', None)
             session.pop('selected_year', None)
-            
-            flash('Salary slips generated successfully!', 'success')
+
+            if upload_to_drive_flag and uploaded_files:
+                flash(f'{len(uploaded_files)} files uploaded to Drive!', 'success')
+
             return send_file(
                 zip_buffer,
                 as_attachment=True,
                 download_name=f"{employee_id}_Salary_Slips.zip",
                 mimetype="application/zip"
             )
-        else:
-            flash('Failed to generate PDF files', 'danger')
-            return redirect(url_for('admin_dashboard'))
 
-    # -------------------------
-    # OTHER DOCUMENTS
-    # -------------------------
+        flash('Failed to generate salary slips', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    # ======================================================
+    # ✅ OTHER DOCUMENTS
+    # ======================================================
+
     html = render_template(
         f"documents/{doc_type}.html",
         data=form_data,
@@ -737,67 +781,90 @@ def generate():
     filename = f"{doc_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
     filepath = os.path.join(employee_folder, filename)
 
-    if html_to_pdf(html, filepath):
-        # ✅ PDF GENERATED SUCCESSFULLY
-        
-        # 🔴 UPDATE INCREMENT IF THIS IS AN INCREMENT LETTER
-        if should_update_increment and employee and pending:
-            try:
-                print(f"Updating increment for employee {employee.id}")  # Debug print
-                print(f"Old increment: {employee.increment_per_month}, New increment: {pending['amount']}")  # Debug print
-                
-                # Update employee's increment
-                employee.increment_per_month = pending['amount']
-                employee.updated_at = datetime.now()
-                
-                # Create increment history
-                history = IncrementHistory(
-                    employee_id=employee.id,
-                    old_increment=pending['old_increment'],
-                    new_increment=pending['amount'],
-                    effective_date=datetime.strptime(pending['effective_date'], '%Y-%m-%d').date() if pending['effective_date'] else None,
-                    generated_by=session.get('admin_username', 'system')
-                )
-                db.session.add(history)
-                
-                print(f"Increment updated successfully")  # Debug print
-                
-                # Clear pending increment
-                session.pop('pending_increment', None)
-                
-            except Exception as e:
-                print(f"Error updating increment: {e}")  # Debug print
-                db.session.rollback()
-        
-        # Save document record
-        if employee:
-            doc = Document(
-                employee_id=employee.id,
-                document_type=doc_type,
-                filename=filename,
-                file_path=filepath,
-                month=None,
-                year=None,
-                generated_by=session.get('admin_username', 'system')
-            )
-            db.session.add(doc)
-            print(f"Document record added")  # Debug print
-        
-        # Commit all changes
-        db.session.commit()
-        
-        # Clear session data
-        session.pop('form_data', None)
-        session.pop('selected_months', None)
-        session.pop('selected_year', None)
-        
-        flash(f'{doc_type.replace("_", " ").title()} generated successfully!', 'success')
-        
-        # Return the file
-        return send_from_directory(employee_folder, filename, as_attachment=True)
-    else:
+    if not html_to_pdf(html, filepath):
         flash('Failed to generate PDF', 'danger')
         return redirect(url_for('admin_dashboard'))
+
+    # -------------------------
+    # UPDATE INCREMENT
+    # -------------------------
+    if should_update_increment and employee and pending:
+        try:
+            old_ctc = employee.ctc
+            increment_amount = pending['amount']
+            new_ctc = old_ctc + (increment_amount * 12)
+
+            employee.ctc = new_ctc
+            employee.updated_at = datetime.now()
+
+            history = IncrementHistory(
+                employee_id=employee.id,
+                old_ctc=old_ctc,
+                increment_amount=increment_amount,
+                new_ctc=new_ctc,
+                effective_date=datetime.strptime(
+                    pending['effective_date'], '%Y-%m-%d'
+                ).date() if pending['effective_date'] else None,
+                generated_by=session.get('admin_username', 'system')
+            )
+
+            db.session.add(history)
+            session.pop('pending_increment', None)
+
+        except Exception as e:
+            print("Increment Update Error:", e)
+            db.session.rollback()
+
+    # -------------------------
+    # SAVE DOCUMENT RECORD
+    # -------------------------
+    if employee:
+        doc = Document(
+            employee_id=employee.id,
+            document_type=doc_type,
+            filename=filename,
+            file_path=filepath,
+            generated_by=session.get('admin_username', 'system')
+        )
+        db.session.add(doc)
+        db.session.flush()
+
+        # ✅ SAFE DRIVE UPLOAD
+        if upload_to_drive_flag and employee:
+            try:
+                folder_map = {
+                    'offer_letter': 'Offer Letters',
+                    'experience_letter': 'Experience Letters',
+                    'increment_letter': 'Increment Letters',
+                    'relieving_letter': 'Relieving Letters'
+                }
+
+                folder_name = folder_map.get(doc_type, 'Other Documents')
+
+                drive_file_id = upload_file_to_drive(
+                    file_path=filepath,
+                    filename=filename,
+                    folder_name=folder_name,
+                    employee_name=employee.full_name,
+                    employee_id=employee.employee_id
+                )
+
+                doc.drive_file_id = drive_file_id
+                flash('Document uploaded to Drive successfully!', 'success')
+
+            except Exception as e:
+                print("Drive Upload Error:", e)
+                flash('Drive upload failed', 'warning')
+
+    db.session.commit()
+
+    session.pop('form_data', None)
+    session.pop('selected_months', None)
+    session.pop('selected_year', None)
+
+    flash(f'{doc_type.replace("_", " ").title()} generated successfully!', 'success')
+
+    return send_from_directory(employee_folder, filename, as_attachment=True)
 
 @app.route('/generated_docs/<filename>')
 def serve_generated_file(filename):
@@ -868,9 +935,13 @@ def admin_dashboard():
     for emp in employees:
         doc_count = Document.query.filter_by(employee_id=emp.id).count()
         total_documents += doc_count
+        # Get latest increment amount for display (optional)
+        latest_inc = IncrementHistory.query.filter_by(employee_id=emp.id).order_by(IncrementHistory.generated_at.desc()).first()
+        increment_amount = latest_inc.increment_amount if latest_inc else 0
         employee_data.append({
             'employee': emp,
-            'document_count': doc_count
+            'document_count': doc_count,
+            'increment_amount': increment_amount
         })
     
     # Calculate statistics
@@ -993,7 +1064,7 @@ def admin_generate_document(emp_id, doc_type):
                 'amount': increment_amount,
                 'effective_date': effective_date,
                 'employee_id': employee.id,
-                'old_increment': employee.increment_per_month
+                'old_ctc': employee.ctc   # store old CTC instead of old increment
             }
 
             # 🔴 ADD SALARY BREAKDOWN CALCULATIONS HERE
@@ -1071,10 +1142,12 @@ def admin_generate_document(emp_id, doc_type):
             session['selected_months'] = selected_months
             session['selected_year'] = request.form.get('year', datetime.now().year)
 
-        # 🔴 ADD SALARY BREAKDOWN FOR OTHER DOCUMENTS IF NEEDED
+        # 🔴 ADD SALARY BREAKDOWN FOR OTHER DOCUMENTS (no increment)
+        # For non-increment documents, we don't have an increment amount, so just use current CTC
         ctc = float(employee.ctc)
         monthly_ctc = round(ctc / 12)
-        monthly_ctc_after_increment = monthly_ctc + employee.increment_per_month
+        # No increment added
+        monthly_ctc_after_increment = monthly_ctc
 
         basic = round(monthly_ctc_after_increment * 0.5)
         hra = round(basic * 0.5)
@@ -1100,7 +1173,7 @@ def admin_generate_document(emp_id, doc_type):
             'professional_tax': professional_tax,
             'gross_salary': gross_salary,
             'net_salary': net_salary,
-            'increment_per_month': employee.increment_per_month
+            'increment_per_month': 0  # No increment
         }
 
         # Prepare form data from employee records
@@ -1114,7 +1187,7 @@ def admin_generate_document(emp_id, doc_type):
             'pan_no': employee.pan_no,
             'designation': employee.designation,
             'ctc': employee.ctc,
-            'increment_per_month': employee.increment_per_month,
+            'increment_per_month': 0,
             'salary_breakdown': salary_breakdown,  # 🔴 ADD THIS
             'joining_date': employee.joining_date.strftime('%Y-%m-%d') if employee.joining_date else None,
             'resignation_date': employee.resignation_date.strftime('%Y-%m-%d') if employee.resignation_date else None,
@@ -1133,10 +1206,10 @@ def admin_generate_document(emp_id, doc_type):
     if doc_type == 'salary_slip':
         return render_template('select_months.html', employee=employee, companies=COMPANIES)
     
-    # 🔴 ADD SALARY BREAKDOWN FOR GET REQUESTS
+    # For other documents (GET request), directly generate with default company
     ctc = float(employee.ctc)
     monthly_ctc = round(ctc / 12)
-    monthly_ctc_after_increment = monthly_ctc + employee.increment_per_month
+    monthly_ctc_after_increment = monthly_ctc  # no increment
 
     basic = round(monthly_ctc_after_increment * 0.5)
     hra = round(basic * 0.5)
@@ -1162,10 +1235,9 @@ def admin_generate_document(emp_id, doc_type):
         'professional_tax': professional_tax,
         'gross_salary': gross_salary,
         'net_salary': net_salary,
-        'increment_per_month': employee.increment_per_month
+        'increment_per_month': 0
     }
 
-    # For other documents (GET request), directly generate with default company
     form_data = {
         'employee_id': employee.employee_id,
         'company': 'company1',
@@ -1176,8 +1248,8 @@ def admin_generate_document(emp_id, doc_type):
         'pan_no': employee.pan_no,
         'designation': employee.designation,
         'ctc': employee.ctc,
-        'increment_per_month': employee.increment_per_month,
-        'salary_breakdown': salary_breakdown,  # 🔴 ADD THIS
+        'increment_per_month': 0,
+        'salary_breakdown': salary_breakdown,
         'joining_date': employee.joining_date.strftime('%Y-%m-%d') if employee.joining_date else None,
         'resignation_date': employee.resignation_date.strftime('%Y-%m-%d') if employee.resignation_date else None,
         'bank_details': {
@@ -1210,11 +1282,16 @@ def view_employee(emp_id):
     
     # Generate folder name for employee documents
     employee_folder = get_employee_folder_name(employee)
-    
+
+    latest_increment = IncrementHistory.query.filter_by(
+        employee_id=emp_id
+    ).order_by(IncrementHistory.generated_at.desc()).first()
+        
     return render_template('view_employee.html', 
                          employee=employee, 
                          documents=documents,
                          increment_history=increment_history,
+                         latest_increment=latest_increment,
                          employee_folder=employee_folder)
 
 # Serve employee documents
@@ -1294,7 +1371,7 @@ def add_employee():
             designation=request.form['designation'],
             department=request.form.get('department'),
             ctc=float(request.form.get('ctc') or 0),
-            increment_per_month=float(request.form.get('increment_per_month') or 0),
+            # increment_per_month removed
             joining_date=joining_date,
             resignation_date=resignation_date,
             status=request.form.get('status', 'active'),
@@ -1394,6 +1471,189 @@ def update_employee_status(emp_id, status):
 
     flash("Employee status updated successfully!", "success")
     return redirect(url_for('view_employee', emp_id=emp_id))
+
+def get_drive_service():
+    """Get authenticated Google Drive service"""
+    token_path = os.path.join(app.config['GOOGLE_DRIVE_TOKEN_FOLDER'], 'token.pickle')
+    
+    if not os.path.exists(token_path):
+        return None, "Not authenticated"
+    
+    with open(token_path, 'rb') as token:
+        credentials = pickle.load(token)
+    
+    # Refresh token if expired
+    if credentials.expired and credentials.refresh_token:
+        import google.auth.transport.requests
+        request = google.auth.transport.requests.Request()
+        credentials.refresh(request)
+        
+        # Save refreshed credentials
+        with open(token_path, 'wb') as token:
+            pickle.dump(credentials, token)
+    
+    service = build('drive', 'v3', credentials=credentials)
+    return service, None
+
+def upload_file_to_drive(file_path, filename, folder_name=None, employee_name=None, employee_id=None):
+    service, error = get_drive_service()
+    if error:
+        raise Exception("Google Drive not connected. Please connect first.")
+    try:
+        print("🔍 Step 1: Creating main folder name...")
+        main_folder_name = f"{employee_id}_{employee_name.replace(' ', '_')}" if employee_id and employee_name else "Documents"
+        print(f"   main_folder_name = {main_folder_name}")
+
+        print("🔍 Step 2: Checking if employee folder exists...")
+        response = service.files().list(
+            q=f"name='{main_folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false",
+            spaces='drive',
+            fields='files(id, name)'
+        ).execute()
+        folders = response.get('files', [])
+        if folders:
+            parent_folder_id = folders[0]['id']
+            print(f"   Existing folder ID: {parent_folder_id}")
+        else:
+            print("   Creating new employee folder...")
+            file_metadata = {
+                'name': main_folder_name,
+                'mimeType': 'application/vnd.google-apps.folder'
+            }
+            folder = service.files().create(body=file_metadata, fields='id').execute()
+            parent_folder_id = folder.get('id')
+            print(f"   New folder ID: {parent_folder_id}")
+
+        if folder_name:
+            print(f"🔍 Step 3: Checking if subfolder '{folder_name}' exists...")
+            response = service.files().list(
+                q=f"name='{folder_name}' and '{parent_folder_id}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false",
+                spaces='drive',
+                fields='files(id, name)'
+            ).execute()
+            subfolders = response.get('files', [])
+            if subfolders:
+                target_folder_id = subfolders[0]['id']
+                print(f"   Existing subfolder ID: {target_folder_id}")
+            else:
+                print("   Creating new subfolder...")
+                file_metadata = {
+                    'name': folder_name,
+                    'mimeType': 'application/vnd.google-apps.folder',
+                    'parents': [parent_folder_id]
+                }
+                subfolder = service.files().create(body=file_metadata, fields='id').execute()
+                target_folder_id = subfolder.get('id')
+                print(f"   New subfolder ID: {target_folder_id}")
+        else:
+            target_folder_id = parent_folder_id
+
+        print(f"🔍 Step 4: Uploading file to folder {target_folder_id}...")
+        file_metadata = {
+            'name': filename,
+            'parents': [target_folder_id]
+        }
+        media = MediaFileUpload(file_path, mimetype='application/pdf', resumable=True)
+        file = service.files().create(
+            body=file_metadata,
+            media_body=media,
+            fields='id, webViewLink'
+        ).execute()
+        file_id = file.get('id')
+        print(f"✅ Upload successful! File ID: {file_id}")
+        return file_id
+
+    except Exception as e:
+        import traceback
+        print("❌ Exception in upload_to_drive:")
+        traceback.print_exc()          # ← this prints the exact line that failed
+        raise Exception(f"Drive upload failed: {str(e)}")
+    
+# ==================== GOOGLE DRIVE AUTHENTICATION ROUTES ====================
+
+@app.route('/authorize')
+def authorize():
+    """Start OAuth flow for Google Drive"""
+    if not session.get('is_admin'):
+        return redirect(url_for('admin_login'))
+    
+    # Check if credentials.json exists
+    if not os.path.exists(CLIENT_SECRETS_FILE):
+        flash('Google Drive credentials file not found. Please add credentials.json to your project.', 'danger')
+        return redirect(url_for('admin_dashboard'))
+    
+    # Create flow instance
+    flow = Flow.from_client_secrets_file(
+        CLIENT_SECRETS_FILE,
+        scopes=SCOPES,
+        redirect_uri=REDIRECT_URI
+    )
+    
+    # Generate authorization URL
+    authorization_url, state = flow.authorization_url(
+        access_type='offline',
+        include_granted_scopes='true',
+        prompt='consent'
+    )
+    
+    # Store state in session for callback
+    session['oauth_state'] = state
+    
+    return redirect(authorization_url)
+
+@app.route('/oauth2callback')
+def oauth2callback():
+    """Handle OAuth callback from Google"""
+    # Verify state
+    if 'oauth_state' not in session:
+        flash('OAuth session expired. Please try again.', 'danger')
+        return redirect(url_for('authorize'))
+    
+    # Create flow instance
+    flow = Flow.from_client_secrets_file(
+        CLIENT_SECRETS_FILE,
+        scopes=SCOPES,
+        state=session['oauth_state'],
+        redirect_uri=REDIRECT_URI
+    )
+    
+    # Fetch token
+    flow.fetch_token(authorization_response=request.url)
+    credentials = flow.credentials
+    
+    # Save credentials for future use
+    token_path = os.path.join(app.config['GOOGLE_DRIVE_TOKEN_FOLDER'], 'token.pickle')
+    with open(token_path, 'wb') as token:
+        pickle.dump(credentials, token)
+    
+    # Clear session state
+    session.pop('oauth_state', None)
+    
+    flash('✅ Successfully connected to Google Drive!', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/disconnect-drive')
+def disconnect_drive():
+    """Disconnect Google Drive"""
+    if not session.get('is_admin'):
+        return redirect(url_for('admin_login'))
+    
+    token_path = os.path.join(app.config['GOOGLE_DRIVE_TOKEN_FOLDER'], 'token.pickle')
+    if os.path.exists(token_path):
+        os.remove(token_path)
+        flash('Disconnected from Google Drive', 'success')
+    else:
+        flash('No Google Drive connection found', 'info')
+    
+    return redirect(url_for('admin_dashboard'))
+
+@app.context_processor
+def utility_processor():
+    def check_drive_connection():
+        token_path = os.path.join(app.config['GOOGLE_DRIVE_TOKEN_FOLDER'], 'token.pickle')
+        return os.path.exists(token_path)
+    
+    return dict(check_drive_connection=check_drive_connection)
 
 if __name__ == '__main__':
     with app.app_context():

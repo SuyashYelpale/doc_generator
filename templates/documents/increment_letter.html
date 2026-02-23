@@ -5,7 +5,16 @@
         <form action="{{ url_for('generate') }}" method="POST" class="action-form">
             <button type="submit" class="btn btn-primary">
                 <span class="btn-icon">📥</span>
-                <span class="btn-text">Download & Save</span>
+                <span class="btn-text">Download</span>
+            </button>
+        </form>
+
+        <!-- NEW: Download & Upload to Drive Button -->
+        <form action="{{ url_for('generate') }}" method="POST" class="action-form">
+            <input type="hidden" name="upload_to_drive" value="true">
+            <button type="submit" class="btn btn-success">
+                <span class="btn-icon">☁️</span>
+                <span class="btn-text">Download & Save to Drive</span>
             </button>
         </form>
 
@@ -107,6 +116,23 @@
     }
 
     .btn-primary:active {
+        transform: translateY(0);
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #1e7e34 0%, #28a745 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
+    }
+
+    .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(40, 167, 69, 0.3);
+        background: linear-gradient(135deg, #1e7e34 0%, #218838 100%);
+    }
+
+    .btn-success:active {
         transform: translateY(0);
         box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
     }
