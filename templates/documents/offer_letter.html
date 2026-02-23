@@ -1,178 +1,261 @@
-<!-- Action Bar -->
+<!-- Action Bar (hidden in PDF) -->
 <div class="action-bar">
-    <!-- Print Button Only -->
-    <button type="button" class="print-btn" onclick="window.print()">
-        🖨️ Save as PDF
-    </button>
+    <div class="action-bar-container">
+        <!-- Download Button (local only) -->
+        <form action="{{ url_for('generate') }}" method="POST" class="action-form">
+            <input type="hidden" name="upload_to_drive" value="false">
+            <button type="submit" class="btn btn-primary">
+                <span class="btn-icon">📥</span>
+                <span class="btn-text">Download</span>
+            </button>
+        </form>
 
-    <!-- Cancel Button -->
-    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
-        ✖ Cancel
-    </a>
+        <!-- Download & Save to Drive -->
+        <form action="{{ url_for('generate') }}" method="POST" class="action-form">
+            <input type="hidden" name="upload_to_drive" value="true">
+            <button type="submit" class="btn btn-success">
+                <span class="btn-icon">☁️</span>
+                <span class="btn-text">Download & Save to Drive</span>
+            </button>
+        </form>
+
+        <!-- Print Button -->
+        <button type="button" class="btn btn-secondary" onclick="window.print()">
+            <span class="btn-icon">🖨️</span>
+            <span class="btn-text">Print</span>
+        </button>
+
+        <!-- Cancel Button -->
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-danger">
+            <span class="btn-icon">✕</span>
+            <span class="btn-text">Cancel</span>
+        </a>
+    </div>
 </div>
 
 <style>
+    /* Action bar styling – same as before, hidden in print */
     .action-bar {
-        max-width: 800px;
-        margin: 20px auto;
-        display: flex;
-        justify-content: flex-end;
+        background: white;
+        border-bottom: 1px solid #e9ecef;
+        padding: 15px 0;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
-
-    .print-btn {
-        background-color: #0d6efd;  /* Blue color */
-        color: white;
+    .action-bar-container {
+        max-width: 900px;
+        margin: 0 auto;
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        align-items: center;
+        padding: 0 20px;
+    }
+    .btn {
+        padding: 12px 24px;
         border: none;
-        padding: 10px 20px;
-        font-size: 16px;
+        border-radius: 8px;
+        font-size: 15px;
         font-weight: 600;
-        border-radius: 5px;
         cursor: pointer;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .btn-primary { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; }
+    .btn-success { background: linear-gradient(135deg, #1e7e34 0%, #28a745 100%); color: white; }
+    .btn-secondary { background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%); color: white; }
+    .btn-danger { background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%); color: white; }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+    .btn-icon { font-size: 18px; }
+    @media print { .action-bar { display: none !important; } }
+
+    /* PDF page settings */
+    @page {
+        size: A4;
+        margin: 2cm;
     }
 
-    .print-btn:hover {
-        background-color: #0b5ed7;
-        transform: translateY(-2px);
+    /* Offer letter styles – screen version (centered with border) */
+    .offer-letter {
+        font-family: 'Arial', sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        padding: 30px;
+        position: relative;
+        background-color: white;
+    }
+    .letter-header {
+        border-bottom: 2px solid #0d6efd;
+        padding-bottom: 20px;
+        margin-bottom: 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 3rem;
+    }
+    .letter-body { position: relative; z-index: 1; }
+    h2, h4 { color: #0d6efd; }
+    h4 { text-align: center; margin-bottom: 30px; }
+    .text-end { text-align: right; }
+    .page-break { page-break-before: always; margin-top: 30px; }
+
+    /* Table styling */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+        font-size: 12px;
+    }
+    th { background-color: #0d6efd; color: white; padding: 10px; text-align: left; }
+    td { padding: 8px; border-bottom: 1px solid #dee2e6; }
+    .total-row { background-color: #e9ecef; font-weight: bold; }
+
+    /* Watermark */
+    .watermark-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        pointer-events: none;
+        z-index: 0;
+    }
+    .watermark-container img {
+        max-width: 80%;
+        max-height: 80%;
+        object-fit: contain;
+        opacity: 0.1;
+        filter: grayscale(100%);
+        transform: rotate(-20deg);
     }
 
-    /* Hide button in print mode */
+    /* Print styles – full width, no borders/shadows */
     @media print {
-        .action-bar {
-            display: none !important;
+        .offer-letter {
+            max-width: none;
+            margin: 0;
+            padding: 0;
+            border: none;
+            box-shadow: none;
+        }
+        .letter-header, .letter-body, .page-break {
+            width: 100%;
         }
     }
 </style>
 
-<div class="offer-letter" style="font-family: 'Arial', sans-serif; max-width: 800px; margin: 0 auto; border: 1px solid #e0e0e0; box-shadow: 0 0 20px rgba(0,0,0,0.1); padding: 30px; position: relative;">
-    <!-- Watermarks logo background -->
-     {% include '_watermark.html' %}
+<div class="offer-letter">
+    <!-- Watermark (absolute, behind content) -->
+    {% if watermark_logo %}
+    <div class="watermark-container">
+        <img src="{{ request.url_root }}static/images/{{ watermark_logo }}" alt="Watermark">
+    </div>
+    {% endif %}
 
-    <!-- Letterhead with decorative border -->
-    <div class="letter-header mb-4" style="border-bottom: 2px solid #0d6efd; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; gap: 3rem;">
-        <!-- Logo on the left -->
+    <!-- Letterhead -->
+    <div class="letter-header">
         <div style="flex: 0 0 auto;">
-            <img src="{{ url_for('static', filename='images/' + company.logo) }}" 
-                 alt="{{ company.name }} Logo" 
+            <img src="{{ request.url_root }}static/images/{{ company.logo }}"
+                 alt="{{ company.name }} Logo"
                  style="height: 150px; max-width: 400px; object-fit: contain;">
         </div>
-        
-        <!-- Company info on the right -->
         <div style="flex: 1; text-align: left;">
-            <div style="display: flex; justify-content: space-between;">
-                <p style="color: #555; font-size: 14px;">
-                    <strong>Office:</strong> {{ company.address }}<br>
-                    <strong>Phone:</strong> {{ company.phone }}<br>
-                    <strong>Email:</strong> {{ company.email }}<br>
-                    <strong>Website:</strong> {{ company.website }}<br>
-                </p>
-            </div>
+            <p style="color: #555; font-size: 14px; margin:0;">
+                <strong>Office:</strong> {{ company.address }}<br>
+                <strong>Phone:</strong> {{ company.phone }}<br>
+                <strong>Email:</strong> {{ company.email }}<br>
+                <strong>Website:</strong> {{ company.website }}
+            </p>
         </div>
     </div>
-    
-    <div class="letter-body" style="position: relative; z-index: 1;">
-        <p class="text-end" style="color: #161616; font-size: 14px; display: flex; justify-content: space-between;">
-{% set auto_id = (range(100000, 999999) | random) %} {# picks a 6-digit number  #}
 
-<span>
-  <strong>Ref No:</strong> 
-  HRD/{% if data.employee_id is defined and data.employee_id %}
-    {{ data.employee_id }}
-  {% else %}
-    {{ auto_id }}
-  {% endif %}/{% if data.date_before %}{{ data.date_before.strftime('%Y') }}{% else %}{{ now.strftime('%Y') }}{% endif %}
-</span>
-
-<span>
-  <strong>Date:</strong> 
-  {% if data.date_before %}
-      {{ data.date_before.strftime('%d')}}
-      {% if data.date_before.strftime('%d') in ['1', '21', '31'] %}st
-      {% elif data.date_before.strftime('%d') in ['2', '22'] %}nd
-      {% elif data.date_before.strftime('%d') in ['3', '23'] %}rd
-      {% else %}th{% endif %}
-      {{ data.date_before.strftime('%B %Y') }}
-  {% else %}
-      {{ now.strftime('%d') }}
-      {% if now.strftime('%d') in ['1', '21', '31'] %}st
-      {% elif now.strftime('%d') in ['2', '22'] %}nd
-      {% elif now.strftime('%d') in ['3', '23'] %}rd
-      {% else %}th{% endif %}
-      {{ now.strftime('%B %Y') }}
-  {% endif %}
-</span>
-
+    <div class="letter-body">
+        <!-- Reference and date -->
+        <p style="color: #161616; font-size: 14px; display: flex; justify-content: space-between;">
+            <span>
+                <strong>Ref No:</strong>
+                HRD/{{ range(100000, 999999) | random }}/{% if data.date_before %}{{ data.date_before.strftime('%Y') }}{% else %}{{ now.strftime('%Y') }}{% endif %}
+            </span>
+            <span>
+                <strong>Date:</strong>
+                {% if data.date_before %}
+                    {{ data.date_before.strftime('%d') }}{% if data.date_before.strftime('%d') in ['1','21','31'] %}st
+                    {% elif data.date_before.strftime('%d') in ['2','22'] %}nd
+                    {% elif data.date_before.strftime('%d') in ['3','23'] %}rd
+                    {% else %}th{% endif %}
+                    {{ data.date_before.strftime('%B %Y') }}
+                {% else %}
+                    {{ now.strftime('%d') }}{% if now.strftime('%d') in ['1','21','31'] %}st
+                    {% elif now.strftime('%d') in ['2','22'] %}nd
+                    {% elif now.strftime('%d') in ['3','23'] %}rd
+                    {% else %}th{% endif %}
+                    {{ now.strftime('%B %Y') }}
+                {% endif %}
+            </span>
         </p>
-        
+
         <p style="font-size: 16px; margin-bottom: 5px;">
-            <strong>{{ data.full_name }}<br></strong>
-            <strong>{{ data.address }}</strong>
+            <strong>{{ data.full_name }}<br>{{ data.address }}</strong>
         </p>
-        
-        <h4 class="text-center mb-4" style="color: #0d6efd; text-align: center; text-underline-offset: 8px;">
-            <strong>OFFER LETTER</strong>
-        </h4>
-        
-        <p style="font-size: 16px;">
-            Dear <strong>{{ data.full_name.split()[0] }},</strong>
-        </p>
-        
+
+        <h4><strong>OFFER LETTER</strong></h4>
+
+        <p style="font-size: 16px;">Dear <strong>{{ data.full_name.split()[0] }},</strong></p>
         <p style="font-size: 16px; text-align: justify; line-height: 1.6;">
             Here are the terms and conditions of your employment with <strong>{{ company.name }}</strong>.
         </p>
-        
+
         <ol style="font-size: 16px; line-height: 1.6; padding-left: 20px;">
             <li style="margin-bottom: 15px;">
                 <strong style="color: #0d6efd;">Date of Joining</strong><br>
-                You are required to join us on 
+                You are required to join us on
                 {% if data.joining_date %}
                     {% if data.joining_date is string %}
                         {{ data.joining_date[-2:] }}/{{ data.joining_date[5:7] }}/{{ data.joining_date[:4] }}
                     {% else %}
                         {{ data.joining_date.strftime('%d/%m/%Y') }}
                     {% endif %}
-                {% else %}
-                    [Joining Date Not Specified]
-                {% endif %}.
+                {% else %}[Joining Date Not Specified]{% endif %}.
             </li>
-            
             <li style="margin-bottom: 15px;">
                 <strong style="color: #0d6efd;">Designation</strong><br>
                 With reference to your application and subsequent interview with us, we are pleased to appoint you as <strong>{{ data.designation }}</strong> with <strong>{{ company.name }}</strong>. We take this opportunity to welcome you to <strong>{{ company.name }}</strong> We value your abilities and believe you will find our work environment to be challenging and fulfilling.
             </li>
-            
             <li style="margin-bottom: 15px;">
                 <strong style="color: #0d6efd;">Location</strong><br>
                 Your location of employment is Pune. You may be asked to relocate to any of our units, departments or the offices of our affiliates, depending on business requirements. In such an event, your remuneration and other benefits shall be determined in accordance with the relevant policies of the Company in that work location.
             </li>
-            
             <li style="margin-bottom: 15px;">
                 <strong style="color: #0d6efd;">Leave</strong><br>
                 You are eligible for <strong>21</strong> working days of leave annually. Leave is credited on a quarterly basis.
             </li>
-            
             <li style="margin-bottom: 15px;">
                 <strong style="color: #0d6efd;">Salary</strong><br>
                 Your Salary will be <strong>Rs. {{ "{:,.2f}".format(data.ctc|float) }}</strong>. The breakup of target annual salary is attached along with this letter.
-
             </li>
-            
             <li style="margin-bottom: 15px;">
                 <strong style="color: #0d6efd;">Termination of Employment</strong><br>
                 You may resign from employment with the Company by providing {{ company.notice_period }} notice period. You are expected to serve the Company diligently during this period of notice, in accordance with all applicable Company policies. The Company may at its sole discretion waive all or part of the notice or allow you to pay in lieu of the notice. Any resignation would have to be accepted by the Company to become effective.
             </li>
-            
             <li style="margin-bottom: 15px;">
                 <strong style="color: #0d6efd;">Confidentiality</strong><br>
                 You acknowledge, and are aware, that during the course of your employment with the Company you will come into possession of valuable information / technical know-how and proprietary information of the Company, including but not limited to current and future business information of the Company, its clients, suppliers or employees. You undertake to keep all such information in strict confidence, and reaffirm that you shall fully adhere to all confidentiality obligations that are set forth in your current terms of employment.
             </li>
-            
             <li style="margin-bottom: 15px;">
                 <strong style="color: #0d6efd;">Personal Taxes</strong><br>
                 Payment described will not be further grossed up with taxes and you will be responsible for the payment of all taxes due with respect to such payments which will be deducted at source by prevailing rule.
             </li>
-            
             <li style="margin-bottom: 15px;">
                 <strong style="color: #0d6efd;">Condition of Hire</strong><br>
                 Your employment will subject to the following pre-conditions:
@@ -189,172 +272,107 @@
                     During your employment with company, you will agree to work on any project that you are assigned to irrespective of technical platform skill and nature of the project. If necessary, you may be required to work in shift. Failing to do so can lead to termination of employment without notice.
                 </p>
             </li>
-            
             <li style="margin-bottom: 15px;">
                 <strong style="color: #0d6efd;">Non-Completions</strong><br>
                 During the course of your employment you should at all times, observe secrecy of any trade or business data, customers name business details or any other information that might to come your knowledge or possession, which according to the company are necessarily confidential and form valuable property of the company.
             </li>
-            
             <li style="margin-bottom: 15px;">
                 <strong style="color: #0d6efd;">Company Policy</strong><br>
                 The company at its discretion has right to introduce new and amend existing rule and regulation at any time without prior notice. The employee will abide by new rules and regulation at all times without any prejudice. We believe we can provide you with an atmosphere in which you can develop your professional skill to the fullest. We look forward to having you <strong>{{ company.name }}</strong> Please do not hesitate to contact company official if you need any further assistance.
             </li>
         </ol>
-        
-        <div class="row mt-5" style="margin-top: 50px;">
-            <div class="col-md-6">
-                <p><strong style="color: #0d6efd;">For {{ company.name }}</strong></p>
-                <div style="height: 80px;">
-                    {% if company.signature %}
-                        <img src="{{ url_for('static', filename='images/signatures/' + company.signature) }}" 
-                             alt="Authorized Signature" 
-                             style="height: 100px; max-width: 200px; object-fit: contain; margin-left: 0.75rem;">
-                    {% endif %}
-                </div>
-                <p style="margin-bottom: 0;">
-                    <strong>{{ company.hr_name }}</strong><br>
-                    {{ company.hr_designation }}<br>
-                    <span style="font-size: 14px; color: #111111;"><strong>{{ company.name }}</strong></span>
-                </p>
+
+        <!-- Signature -->
+        <div style="margin-top: 50px;">
+            <p><strong style="color: #0d6efd;">For {{ company.name }}</strong></p>
+            <div style="height: 80px;">
+                {% if company.signature %}
+                    <img src="{{ request.url_root }}static/images/signatures/{{ company.signature }}"
+                         alt="Authorized Signature"
+                         style="height: 100px; max-width: 200px; object-fit: contain;">
+                {% endif %}
             </div>
+            <p style="margin-bottom:0;">
+                <strong>{{ company.hr_name }}</strong><br>
+                {{ company.hr_designation }}<br>
+                <span style="font-size: 14px;"><strong>{{ company.name }}</strong></span>
+            </p>
         </div>
     </div>
 
     <!-- Footer -->
     <div style="margin-top: 40px; border-top: 1px solid #e0e0e0; padding-top: 10px; font-size: 12px; color: #777; text-align: center;">
-        <p style="margin-bottom: 0;">
-            *Company Confidential - This communication is confidential between you and {{ company.name }}
-        </p>
+        <p style="margin-bottom: 0;">*Company Confidential - This communication is confidential between you and {{ company.name }}</p>
     </div>
 
-
-    <!-- Page break for salary slip section -->
+    <!-- Page break for annexure -->
     <div class="page-break"></div>
 
-    <!-- Document Title for Salary Slip -->
-    <div style="text-align: center; margin-bottom: 20px; position: relative; z-index: 1;">
+    <!-- Annexure I - Compensation Details -->
+    <div style="text-align: center; margin-bottom: 20px;">
         <h2 style="color: #0d6efd; margin-bottom: 5px; font-size: 18px; text-transform: uppercase;">ANNEXURE - I</h2>
-        <h3 style="color: #0d6efd; margin-top: 0; margin-bottom: 0; font-size: 16px;">COMPENSATION DETAILS</h3>
+        <h3 style="color: #0d6efd; margin-top: 0; font-size: 16px;">COMPENSATION DETAILS</h3>
         <div style="border-top: 1px dashed #ccc; margin: 10px auto; width: 200px;"></div>
     </div>
 
-    <!-- Employee Details -->
-    <div style="margin-bottom: 20px; background-color: #f8f9fa; padding: 15px; border-radius: 5px; font-size: 13px; position: relative; z-index: 1; border: 1px solid #e0e0e0;">
+    <!-- Employee details -->
+    <div style="margin-bottom: 20px; background-color: #f8f9fa; padding: 15px; border-radius: 5px; border: 1px solid #e0e0e0;">
         <div style="display: flex; justify-content: space-between; flex-wrap: wrap;">
             <div style="flex: 1; min-width: 250px;">
-                <p style="margin: 5px 0;"><strong>Employee Name:</strong> {{ data.full_name }}</p>
-                <p style="margin: 5px 0;"><strong>Designation:</strong> {{ data.designation }}</p>
+                <p><strong>Employee Name:</strong> {{ data.full_name }}</p>
+                <p><strong>Designation:</strong> {{ data.designation }}</p>
             </div>
             <div style="flex: 1; min-width: 250px;">
-                <p style="margin: 5px 0;"><strong>CTC (Annual):</strong> ₹{{ "{:,.2f}".format(data.ctc|float) }}</p>
-
+                <p><strong>CTC (Annual):</strong> ₹{{ "{:,.2f}".format(data.ctc|float) }}</p>
             </div>
         </div>
     </div>
 
-   <!-- Salary component calculations -->
-{% set basic = ((data.ctc|float) * 0.5) | round(0) %}
-{% set hra = (basic * 0.5) | round(0) %}
-{% set conveyance = (data.ctc|float * 0.05) | round(0) %}
-{% set medical = (data.ctc|float * 0.014) | round(0) %}
-{% set telephone = (data.ctc|float * 0.02) | round(0) %}
-{# {% set special_allowance = (data.ctc|float * 0.1) | round(0) %} #}
-{% set special_allowance = ((data.ctc|float) - (basic + hra + conveyance + medical + telephone)) | round(0) %}
-{% set professional_tax = 2500 %}
-{% set da = 0 %} {# Define DA since it was used in table #}
-{% set gross_salary = basic + hra + conveyance + medical + telephone + special_allowance %}
-{% set total_deductions = professional_tax %}
-<!-- {% set net_salary = (gross_salary - total_deductions) | round(0) %} -->
+    <!-- Salary calculations (same as before) -->
+    {% set basic = ((data.ctc|float) * 0.5) | round(0) %}
+    {% set hra = (basic * 0.5) | round(0) %}
+    {% set conveyance = (data.ctc|float * 0.05) | round(0) %}
+    {% set medical = (data.ctc|float * 0.014) | round(0) %}
+    {% set telephone = (data.ctc|float * 0.02) | round(0) %}
+    {% set special_allowance = ((data.ctc|float) - (basic + hra + conveyance + medical + telephone)) | round(0) %}
+    {% set professional_tax = 2500 %}
+    {% set gross_salary = basic + hra + conveyance + medical + telephone + special_allowance %}
+    {% set total_deductions = professional_tax %}
+    {% set net_salary = (gross_salary - total_deductions) | round(0) %}
 
-
-    <!-- Salary Breakdown Table -->
-    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; position: relative; z-index: 1;">
+    <!-- Salary table -->
+    <table>
         <thead>
             <tr style="background-color: #0d6efd; color: white;">
-                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #0a58ca;">HEAD</th>
-                <th style="padding: 10px; text-align: right; border-bottom: 2px solid #0a58ca;">EARNINGS (₹)</th>
-                <th style="padding: 10px; text-align: right; border-bottom: 2px solid #0a58ca;">DEDUCTIONS (₹)</th>
+                <th style="padding: 10px; text-align: left;">HEAD</th>
+                <th style="padding: 10px; text-align: right;">EARNINGS (₹)</th>
+                <th style="padding: 10px; text-align: right;">DEDUCTIONS (₹)</th>
             </tr>
         </thead>
         <tbody>
-            <!-- Monthly Components -->
-            <tr>
-                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>1. MONTHLY COMPONENTS</strong></td>
-                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;"></td>
-                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;"></td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">Basic Salary</td>
-                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">₹{{ "{:,.2f}".format(basic) }}</td>
-                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">-</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">House Rent Allowance (HRA)</td>
-                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">₹{{ "{:,.2f}".format(hra) }}</td>
-                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">-</td>
-            </tr>
-            <!-- <tr>
-                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">Dearness Allowance (DA)</td>
-                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">₹{{ "{:,.2f}".format(da) }}</td>
-                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">-</td>
-            </tr> -->
-            <!-- Reimbursements -->
-            <tr>
-                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>2. REIMBURSEMENTS</strong></td>
-                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;"></td>
-                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;"></td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">Conveyance Allowance</td>
-                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">₹{{ "{:,.2f}".format(conveyance) }}</td>
-                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">-</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">Medical Allowance</td>
-                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">₹{{ "{:,.2f}".format(medical) }}</td>
-                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">-</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">Telephone/Mobile</td>
-                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">₹{{ "{:,.2f}".format(telephone) }}</td>
-                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">-</td>
-            </tr>
-            <!-- Special Allowance -->
-            <tr>
-                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>3. SPECIAL ALLOWANCE</strong></td>
-                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">₹{{ "{:,.2f}".format(special_allowance) }}</td>
-                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">-</td>
-            </tr>
-            <!-- Deductions -->
-            <tr>
-                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>4. DEDUCTIONS</strong></td>
-                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;"></td>
-                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;"></td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">Professional Tax</td>
-                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">-</td>
-                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">₹{{ "{:,.2f}".format(professional_tax) }}</td>
-            </tr>
-            <!-- Totals -->
-            <tr style="background-color: #e9ecef; font-weight: bold;">
-                <td style="padding: 10px; border-top: 2px solid #0d6efd; border-bottom: 2px solid #0d6efd;">TOTAL</td>
-                <td style="padding: 10px; text-align: right; border-top: 2px solid #0d6efd; border-bottom: 2px solid #0d6efd;">₹{{ "{:,.2f}".format(gross_salary) }}</td>
-                <td style="padding: 10px; text-align: right; border-top: 2px solid #0d6efd; border-bottom: 2px solid #0d6efd;">₹{{ "{:,.2f}".format(total_deductions) }}</td>
+            <tr><td><strong>1. MONTHLY COMPONENTS</strong></td><td></td><td></td></tr>
+            <tr><td>Basic Salary</td><td style="text-align: right;">₹{{ "{:,.2f}".format(basic) }}</td><td style="text-align: right;">-</td></tr>
+            <tr><td>House Rent Allowance (HRA)</td><td style="text-align: right;">₹{{ "{:,.2f}".format(hra) }}</td><td style="text-align: right;">-</td></tr>
+            <tr><td><strong>2. REIMBURSEMENTS</strong></td><td></td><td></td></tr>
+            <tr><td>Conveyance Allowance</td><td style="text-align: right;">₹{{ "{:,.2f}".format(conveyance) }}</td><td style="text-align: right;">-</td></tr>
+            <tr><td>Medical Allowance</td><td style="text-align: right;">₹{{ "{:,.2f}".format(medical) }}</td><td style="text-align: right;">-</td></tr>
+            <tr><td>Telephone/Mobile</td><td style="text-align: right;">₹{{ "{:,.2f}".format(telephone) }}</td><td style="text-align: right;">-</td></tr>
+            <tr><td><strong>3. SPECIAL ALLOWANCE</strong></td><td style="text-align: right;">₹{{ "{:,.2f}".format(special_allowance) }}</td><td style="text-align: right;">-</td></tr>
+            <tr><td><strong>4. DEDUCTIONS</strong></td><td></td><td></td></tr>
+            <tr><td>Professional Tax</td><td style="text-align: right;">-</td><td style="text-align: right;">₹{{ "{:,.2f}".format(professional_tax) }}</td></tr>
+            <tr class="total-row">
+                <td><strong>TOTAL</strong></td>
+                <td style="text-align: right;"><strong>₹{{ "{:,.2f}".format(gross_salary) }}</strong></td>
+                <td style="text-align: right;"><strong>₹{{ "{:,.2f}".format(total_deductions) }}</strong></td>
             </tr>
         </tbody>
     </table>
 
-    <!-- Net Salary -->
-    <div style="text-align: center; margin-bottom: 20px; position: relative; z-index: 1;">
+    <!-- Net salary box -->
+    <div style="text-align: center; margin-top: 20px;">
         <div style="display: inline-block; background-color: #f8f9fa; padding: 15px 30px; border-radius: 5px; border: 1px solid #e0e0e0;">
-            <h3 style="color: #0d6efd; margin-bottom: 5px; font-size: 16px; text-transform: uppercase;">
-               Net Salary: ₹{{ "{:,.0f}".format(net_salary) }}
-            </h3>
-           <p style="font-style: italic; font-size: 13px; margin: 0; color: #555;">
-    (₹{{ "{:,.0f}".format(net_salary) }})
-</p>
-
+            <h3 style="color: #0d6efd; margin-bottom: 5px; font-size: 16px;">Net Salary: ₹{{ "{:,.0f}".format(net_salary) }}</h3>
+            <p style="font-style: italic; font-size: 13px; margin:0;">(₹{{ "{:,.0f}".format(net_salary) }})</p>
         </div>
     </div>
 </div>

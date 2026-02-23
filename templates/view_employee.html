@@ -176,14 +176,16 @@
                                     <td>{{ doc.generated_at.strftime('%d %b %Y, %H:%M') }}</td>
                                     <td>{{ doc.generated_by }}</td>
                                     <td>
-                                        <a href="{{ url_for('serve_employee_document', emp_folder=emp_folder, doc_type=doc.document_type + 's', filename=doc.filename) }}" 
-                                           class="btn btn-sm btn-success" target="_blank">
-                                            <i class="fas fa-eye"></i> Local
+                                        {% if employee.drive_folder_id %}
+                                        <a href="https://drive.google.com/drive/folders/{{ employee.drive_folder_id }}" 
+                                        class="btn btn-sm btn-primary" target="_blank">
+                                            <i class="fab fa-google-drive"></i> Drive Folder
                                         </a>
+                                        {% endif %}
                                         {% if doc.drive_file_id %}
                                         <a href="https://drive.google.com/file/d/{{ doc.drive_file_id }}/view" 
-                                           class="btn btn-sm btn-info" target="_blank">
-                                            <i class="fab fa-google-drive"></i> Drive
+                                        class="btn btn-sm btn-info" target="_blank">
+                                            <i class="fas fa-file-pdf"></i> Document
                                         </a>
                                         {% endif %}
                                     </td>

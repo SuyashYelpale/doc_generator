@@ -2,7 +2,7 @@
 
 {% block content %}
 <style>
-    /* Main Layout */
+    /* ==================== MAIN LAYOUT ==================== */
     .admin-container {
         display: flex;
         min-height: 100vh;
@@ -19,6 +19,8 @@
         height: 100vh;
         overflow-y: auto;
         box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease;
+        z-index: 1000;
     }
 
     .sidebar-header {
@@ -85,16 +87,35 @@
         font-size: 12px;
     }
 
+    /* Mobile sidebar toggle button */
+    .sidebar-toggle {
+        display: none;
+        position: fixed;
+        top: 15px;
+        left: 15px;
+        z-index: 1001;
+        background: #667eea;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 10px 15px;
+        font-size: 20px;
+        cursor: pointer;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
     /* Main Content */
     .admin-content {
         flex: 1;
         margin-left: 280px;
         padding: 30px;
+        transition: margin-left 0.3s ease;
     }
 
     /* Header */
     .content-header {
         display: flex;
+        flex-wrap: wrap;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 30px;
@@ -102,20 +123,24 @@
         padding: 20px;
         border-radius: 10px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        gap: 15px;
     }
 
     .content-header h2 {
         margin: 0;
         color: #333;
         font-size: 24px;
+        flex: 1 1 auto;
     }
 
     .header-actions {
         display: flex;
         gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
     }
 
-    /* Cards */
+    /* Stats Grid */
     .stats-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -169,19 +194,19 @@
         display: flex;
         flex-direction: column;
     }
-    
+
     .employee-card:hover {
         transform: translateY(-5px);
         box-shadow: 0 8px 15px rgba(0,0,0,0.2);
     }
-    
+
     .card-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         padding: 20px;
         position: relative;
     }
-    
+
     .employee-avatar {
         width: 60px;
         height: 60px;
@@ -191,7 +216,7 @@
         margin: 0 auto 10px;
         display: block;
     }
-    
+
     .status-badge {
         position: absolute;
         top: 10px;
@@ -202,67 +227,38 @@
         font-weight: bold;
         text-transform: uppercase;
     }
-    
-    .status-active {
-        background-color: #28a745;
-        color: white;
-    }
-    
-    .status-resigned {
-        background-color: #dc3545;
-        color: white;
-    }
-    
-    .status-terminated {
-        background-color: #6c757d;
-        color: white;
-    }
-    
+
+    .status-active { background-color: #28a745; color: white; }
+    .status-resigned { background-color: #dc3545; color: white; }
+    .status-terminated { background-color: #6c757d; color: white; }
+
     .info-row {
         display: flex;
         justify-content: space-between;
         padding: 6px 0;
         border-bottom: 1px solid #f0f0f0;
     }
-    
+
     .info-label {
         color: #6c757d;
         font-weight: 500;
         font-size: 13px;
     }
-    
+
     .info-value {
         font-weight: 600;
         color: #333;
         font-size: 13px;
     }
 
-    .payment-status {
-        display: inline-block;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: 600;
+    .document-badge {
+        background-color: #e9ecef;
+        border-radius: 20px;
+        padding: 2px 10px;
+        font-size: 12px;
+        color: #495057;
     }
 
-    .payment-paid {
-        background-color: #d4edda;
-        color: #155724;
-        border: 1px solid #c3e6cb;
-    }
-
-    .payment-pending {
-        background-color: #fff3cd;
-        color: #856404;
-        border: 1px solid #ffeeba;
-    }
-
-    .payment-overdue {
-        background-color: #f8d7da;
-        color: #721c24;
-        border: 1px solid #f5c6cb;
-    }
-    
     .action-btn {
         width: 100%;
         margin: 3px 0;
@@ -271,11 +267,9 @@
         font-size: 12px;
         padding: 6px 12px;
     }
-    
-    .action-btn:hover {
-        transform: scale(1.02);
-    }
-    
+
+    .action-btn:hover { transform: scale(1.02); }
+
     .btn-offer { background-color: #4e73df; color: white; }
     .btn-salary { background-color: #1cc88a; color: white; }
     .btn-experience { background-color: #36b9cc; color: white; }
@@ -284,7 +278,27 @@
     .btn-danger { background-color: #dc3545; color: white; }
     .btn-danger:hover { background-color: #c82333; }
 
-    /* Forms */
+    /* Payment Status */
+    .payment-status {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+    .payment-paid { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .payment-pending { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+    .payment-overdue { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+    /* Forms & Filters */
+    .filter-bar {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
     .form-container {
         background: white;
         padding: 30px;
@@ -300,15 +314,9 @@
         border-bottom: 2px solid #667eea;
     }
 
-    .form-title h3 {
-        margin: 0;
-        color: #333;
-    }
+    .form-title h3 { margin: 0; color: #333; }
 
-    .form-group {
-        margin-bottom: 20px;
-    }
-
+    .form-group { margin-bottom: 20px; }
     .form-group label {
         display: block;
         margin-bottom: 8px;
@@ -352,7 +360,7 @@
         box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
     }
 
-    /* Employee Selection for Document Generation */
+    /* Employee Selector (Document Generator) */
     .employee-selector {
         background: white;
         padding: 30px;
@@ -388,16 +396,8 @@
         background: #f0fff4;
     }
 
-    .employee-select-item h5 {
-        margin: 0 0 5px;
-        color: #333;
-    }
-
-    .employee-select-item p {
-        margin: 0;
-        color: #6c757d;
-        font-size: 13px;
-    }
+    .employee-select-item h5 { margin: 0 0 5px; color: #333; }
+    .employee-select-item p { margin: 0; color: #6c757d; font-size: 13px; }
 
     .document-type-grid {
         display: grid;
@@ -422,18 +422,10 @@
         box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
     }
 
-    .document-type-card i {
-        font-size: 32px;
-        margin-bottom: 10px;
-        display: block;
-    }
+    .document-type-card i { font-size: 32px; margin-bottom: 10px; display: block; }
+    .document-type-card h6 { margin: 0; font-size: 14px; }
 
-    .document-type-card h6 {
-        margin: 0;
-        font-size: 14px;
-    }
-
-    /* Payment Section */
+    /* Payment Table */
     .payment-table {
         background: white;
         border-radius: 10px;
@@ -460,9 +452,7 @@
         border-bottom: 1px solid #dee2e6;
     }
 
-    .payment-table tr:hover {
-        background: #f8f9fa;
-    }
+    .payment-table tr:hover { background: #f8f9fa; }
 
     .pay-btn {
         background: #28a745;
@@ -475,42 +465,82 @@
         transition: all 0.3s;
     }
 
-    .pay-btn:hover {
-        background: #218838;
-        transform: translateY(-1px);
-    }
+    .pay-btn:hover { background: #218838; transform: translateY(-1px); }
+    .pay-btn:disabled { background: #6c757d; cursor: not-allowed; }
 
-    .pay-btn:disabled {
-        background: #6c757d;
-        cursor: not-allowed;
-    }
-
-    /* Filter Bar */
-    .filter-bar {
-        background: white;
-        padding: 20px;
-        border-radius: 10px;
-        margin-bottom: 30px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
+    /* ==================== RESPONSIVE STYLES ==================== */
+    @media (max-width: 992px) {
         .admin-sidebar {
-            width: 100%;
-            height: auto;
-            position: relative;
+            width: 240px;
+        }
+        .admin-content {
+            margin-left: 240px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .sidebar-toggle {
+            display: block;
+        }
+        .admin-sidebar {
+            transform: translateX(-100%);
+        }
+        .admin-sidebar.open {
+            transform: translateX(0);
         }
         .admin-content {
             margin-left: 0;
+            padding: 20px;
         }
-        .admin-container {
+        .content-header {
             flex-direction: column;
+            align-items: stretch;
+        }
+        .content-header h2 {
+            font-size: 20px;
+            text-align: center;
+        }
+        .header-actions {
+            justify-content: center;
+        }
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+        .employee-list, .document-type-grid {
+            grid-template-columns: 1fr;
+        }
+        .payment-table {
+            overflow-x: auto;
+        }
+        .payment-table table {
+            min-width: 600px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .action-btn {
+            font-size: 11px;
+            padding: 5px 8px;
+        }
+        .btn, .btn-sm {
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+        .employee-select-item {
+            padding: 12px;
         }
     }
 </style>
 
 <div class="admin-container">
+    <!-- Mobile sidebar toggle button -->
+    <button class="sidebar-toggle" onclick="document.querySelector('.admin-sidebar').classList.toggle('open')">
+        <i class="fas fa-bars"></i>
+    </button>
+
     <!-- Sidebar -->
     <div class="admin-sidebar">
         <div class="sidebar-header">
@@ -561,8 +591,21 @@
 
     <!-- Main Content -->
     <div class="admin-content">
-        <!-- Header -->
+        <!-- Header (single header-actions) -->
         <div class="content-header">
+            <h2>
+                {% if active_tab == 'dashboard' %}
+                    Dashboard Overview
+                {% elif active_tab == 'add_employee' %}
+                    Add New Employee
+                {% elif active_tab == 'employees' %}
+                    Employee Dashboard
+                {% elif active_tab == 'document_generator' %}
+                    Document Generator
+                {% elif active_tab == 'payments' %}
+                    Payment Management
+                {% endif %}
+            </h2>
             <div class="header-actions">
                 {% if check_drive_connection() %}
                     <span class="badge bg-success me-2">
@@ -578,22 +621,6 @@
                 {% endif %}
                 <span class="text-muted">{{ now.strftime('%d %B %Y') }}</span>
             </div>
-            <h2>
-                {% if active_tab == 'dashboard' %}
-                    Dashboard Overview
-                {% elif active_tab == 'add_employee' %}
-                    Add New Employee
-                {% elif active_tab == 'employees' %}
-                    Employee Dashboard
-                {% elif active_tab == 'document_generator' %}
-                    Document Generator
-                {% elif active_tab == 'payments' %}
-                    Payment Management
-                {% endif %}
-            </h2>
-            <div class="header-actions">
-                <span class="text-muted">{{ now.strftime('%d %B %Y') }}</span>
-            </div>
         </div>
 
         <!-- Dashboard Overview Tab -->
@@ -604,9 +631,7 @@
                     <h3>Total Employees</h3>
                     <div class="number">{{ employees|length }}</div>
                 </div>
-                <div class="stat-icon">
-                    <i class="fas fa-users"></i>
-                </div>
+                <div class="stat-icon"><i class="fas fa-users"></i></div>
             </div>
             <div class="stat-card">
                 <div class="stat-info">
@@ -617,7 +642,6 @@
                     <i class="fas fa-user-check"></i>
                 </div>
             </div>
-            
             <div class="stat-card">
                 <div class="stat-info">
                     <h3>Pending Payments</h3>
@@ -633,9 +657,7 @@
         <div class="row">
             <div class="col-md-6">
                 <div class="form-container">
-                    <div class="form-title">
-                        <h3>Recent Employees</h3>
-                    </div>
+                    <div class="form-title"><h3>Recent Employees</h3></div>
                     <div class="employee-list" style="max-height: 400px; overflow-y: auto;">
                         <script>
                             function goToDocumentGenerator(empId) {
@@ -654,34 +676,16 @@
             </div>
             <div class="col-md-6">
                 <div class="form-container">
-                    <div class="form-title">
-                        <h3>Payment Summary</h3>
-                    </div>
+                    <div class="form-title"><h3>Payment Summary</h3></div>
                     <div class="payment-table">
                         <table>
                             <thead>
-                                <tr>
-                                    <th>Status</th>
-                                    <th>Count</th>
-                                    <th>Amount</th>
-                                </tr>
+                                <tr><th>Status</th><th>Count</th><th>Amount</th></tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td><span class="payment-status payment-paid">Paid</span></td>
-                                    <td>{{ paid_count }}</td>
-                                    <td>₹{{ "{:,.0f}".format(paid_amount) }}</td>
-                                </tr>
-                                <tr>
-                                    <td><span class="payment-status payment-pending">Pending</span></td>
-                                    <td>{{ pending_count }}</td>
-                                    <td>₹{{ "{:,.0f}".format(pending_amount) }}</td>
-                                </tr>
-                                <tr>
-                                    <td><span class="payment-status payment-overdue">Overdue</span></td>
-                                    <td>{{ overdue_count }}</td>
-                                    <td>₹{{ "{:,.0f}".format(overdue_amount) }}</td>
-                                </tr>
+                                <tr><td><span class="payment-status payment-paid">Paid</span></td><td>{{ paid_count }}</td><td>₹{{ "{:,.0f}".format(paid_amount) }}</td></tr>
+                                <tr><td><span class="payment-status payment-pending">Pending</span></td><td>{{ pending_count }}</td><td>₹{{ "{:,.0f}".format(pending_amount) }}</td></tr>
+                                <tr><td><span class="payment-status payment-overdue">Overdue</span></td><td>{{ overdue_count }}</td><td>₹{{ "{:,.0f}".format(overdue_amount) }}</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -693,95 +697,39 @@
         <!-- Add Employee Tab -->
         {% if active_tab == 'add_employee' %}
         <div class="form-container">
-            <div class="form-title">
-                <h3>Add New Employee</h3>
-            </div>
+            <div class="form-title"><h3>Add New Employee</h3></div>
             <form method="POST" action="{{ url_for('add_employee') }}" enctype="multipart/form-data">
                 <div class="form-row">
-                    <div class="form-group">
-                        <label>Full Name *</label>
-                        <input type="text" name="full_name" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" name="email" class="form-control">
-                    </div>
+                    <div class="form-group"><label>Full Name *</label><input type="text" name="full_name" class="form-control" required></div>
+                    <div class="form-group"><label>Email</label><input type="email" name="email" class="form-control"></div>
                 </div>
                 <div class="form-row">
-                    <div class="form-group">
-                        <label>Phone</label>
-                        <input type="text" name="phone" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label>Designation *</label>
-                        <input type="text" name="designation" class="form-control" required>
-                    </div>
+                    <div class="form-group"><label>Phone</label><input type="text" name="phone" class="form-control"></div>
+                    <div class="form-group"><label>Designation *</label><input type="text" name="designation" class="form-control" required></div>
                 </div>
                 <div class="form-row">
-                    <div class="form-group">
-                        <label>Department</label>
-                        <input type="text" name="department" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label>CTC (Annual)</label>
-                        <input type="number" name="ctc" class="form-control" step="0.01">
-                    </div>
+                    <div class="form-group"><label>Department</label><input type="text" name="department" class="form-control"></div>
+                    <div class="form-group"><label>CTC (Annual)</label><input type="number" name="ctc" class="form-control" step="0.01"></div>
                 </div>
                 <div class="form-row">
-                    <div class="form-group">
-                        <label>Aadhar Number</label>
-                        <input type="text" name="aadhar_no" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label>PAN Number</label>
-                        <input type="text" name="pan_no" class="form-control">
-                    </div>
+                    <div class="form-group"><label>Aadhar Number</label><input type="text" name="aadhar_no" class="form-control"></div>
+                    <div class="form-group"><label>PAN Number</label><input type="text" name="pan_no" class="form-control"></div>
                 </div>
                 <div class="form-row">
-                    <div class="form-group">
-                        <label>Joining Date</label>
-                        <input type="date" name="joining_date" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label>Status</label>
-                        <select name="status" class="form-control">
-                            <option value="active">Active</option>
-                            <option value="resigned">Resigned</option>
-                            <option value="terminated">Terminated</option>
-                        </select>
-                    </div>
+                    <div class="form-group"><label>Joining Date</label><input type="date" name="joining_date" class="form-control"></div>
+                    <div class="form-group"><label>Status</label><select name="status" class="form-control"><option value="active">Active</option><option value="resigned">Resigned</option><option value="terminated">Terminated</option></select></div>
                 </div>
-                <div class="form-group">
-                    <label>Address</label>
-                    <textarea name="address" class="form-control" rows="2"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Profile Photo</label>
-                    <input type="file" name="profile_image" class="form-control" accept="image/*">
-                </div>
-                
-                <h5 style="margin: 20px 0 15px;">Bank Details</h5>
+                <div class="form-group"><label>Address</label><textarea name="address" class="form-control" rows="2"></textarea></div>
+                <div class="form-group"><label>Profile Photo</label><input type="file" name="profile_image" class="form-control" accept="image/*"></div>
+                <h5 style="margin:20px 0 15px;">Bank Details</h5>
                 <div class="form-row">
-                    <div class="form-group">
-                        <label>Account Holder</label>
-                        <input type="text" name="account_holder" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label>Account Number</label>
-                        <input type="text" name="account_number" class="form-control">
-                    </div>
+                    <div class="form-group"><label>Account Holder</label><input type="text" name="account_holder" class="form-control"></div>
+                    <div class="form-group"><label>Account Number</label><input type="text" name="account_number" class="form-control"></div>
                 </div>
                 <div class="form-row">
-                    <div class="form-group">
-                        <label>Bank Name</label>
-                        <input type="text" name="bank_name" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label>IFSC Code</label>
-                        <input type="text" name="ifsc_code" class="form-control">
-                    </div>
+                    <div class="form-group"><label>Bank Name</label><input type="text" name="bank_name" class="form-control"></div>
+                    <div class="form-group"><label>IFSC Code</label><input type="text" name="ifsc_code" class="form-control"></div>
                 </div>
-                
                 <button type="submit" class="btn-submit">Add Employee</button>
             </form>
         </div>
@@ -789,42 +737,15 @@
 
         <!-- Employee Dashboard Tab -->
         {% if active_tab == 'employees' %}
-        <!-- Filter Bar -->
         <div class="filter-bar">
             <div class="row">
-                <div class="col-md-4">
-                    <input type="text" class="form-control" id="searchInput" 
-                           placeholder="🔍 Search by name, ID, or designation...">
-                </div>
-                <div class="col-md-3">
-                    <select class="form-select" id="statusFilter">
-                        <option value="all">All Status</option>
-                        <option value="active">Active</option>
-                        <option value="resigned">Resigned</option>
-                        <option value="terminated">Terminated</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <select class="form-select" id="departmentFilter">
-                        <option value="all">All Departments</option>
-                        {% set departments = [] %}
-                        {% for item in employees %}
-                            {% if item.employee.department and item.employee.department not in departments %}
-                                {% set departments = departments.append(item.employee.department) %}
-                                <option value="{{ item.employee.department }}">{{ item.employee.department }}</option>
-                            {% endif %}
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <button class="btn btn-secondary w-100" onclick="resetFilters()">
-                        <i class="fas fa-undo"></i> Reset
-                    </button>
-                </div>
+                <div class="col-md-4"><input type="text" class="form-control" id="searchInput" placeholder="🔍 Search by name, ID, or designation..."></div>
+                <div class="col-md-3"><select class="form-select" id="statusFilter"><option value="all">All Status</option><option value="active">Active</option><option value="resigned">Resigned</option><option value="terminated">Terminated</option></select></div>
+                <div class="col-md-3"><select class="form-select" id="departmentFilter"><option value="all">All Departments</option>{% set departments = [] %}{% for item in employees %}{% if item.employee.department and item.employee.department not in departments %}{% set departments = departments.append(item.employee.department) %}<option value="{{ item.employee.department }}">{{ item.employee.department }}</option>{% endif %}{% endfor %}</select></div>
+                <div class="col-md-2"><button class="btn btn-secondary w-100" onclick="resetFilters()"><i class="fas fa-undo"></i> Reset</button></div>
             </div>
         </div>
 
-        <!-- Employee Cards Grid -->
         <div class="row" id="employeeGrid">
             {% for item in employees %}
             <div class="col-xl-4 col-lg-6 col-md-6 mb-4 employee-card-wrapper" 
@@ -834,81 +755,29 @@
                  data-status="{{ item.employee.status }}"
                  data-department="{{ item.employee.department|lower }}">
                 <div class="card employee-card">
-                    <!-- Card Header with Avatar -->
                     <div class="card-header text-center">
-                        <span class="status-badge status-{{ item.employee.status }}">
-                            {{ item.employee.status|upper }}
-                        </span>
-                        
+                        <span class="status-badge status-{{ item.employee.status }}">{{ item.employee.status|upper }}</span>
                         {% if item.employee.profile_image %}
-                            <img src="{{ url_for('serve_profile_image', filename=item.employee.profile_image) }}" 
-                                 class="employee-avatar" alt="{{ item.employee.full_name }}">
+                            <img src="{{ url_for('serve_profile_image', filename=item.employee.profile_image) }}" class="employee-avatar" alt="{{ item.employee.full_name }}">
                         {% else %}
-                            <div class="employee-avatar" style="background: #6c757d; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white;">
-                                {{ item.employee.full_name[:1] }}
-                            </div>
+                            <div class="employee-avatar" style="background:#6c757d; display:flex; align-items:center; justify-content:center; font-size:24px; color:white;">{{ item.employee.full_name[:1] }}</div>
                         {% endif %}
-                        
-                        <h5 class="mt-2 mb-0 text-white" style="font-size: 16px;">{{ item.employee.full_name }}</h5>
-                        <p class="text-white-50 mb-0" style="font-size: 12px;">{{ item.employee.employee_id }}</p>
+                        <h5 class="mt-2 mb-0 text-white" style="font-size:16px;">{{ item.employee.full_name }}</h5>
+                        <p class="text-white-50 mb-0" style="font-size:12px;">{{ item.employee.employee_id }}</p>
                     </div>
-                    
-                    <!-- Card Body - Essential Info Only -->
                     <div class="card-body">
-                        <div class="info-row">
-                            <span class="info-label">💼 Designation</span>
-                            <span class="info-value">{{ item.employee.designation }}</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">💰 CTC</span>
-                            <span class="info-value">₹{{ "{:,.0f}".format(item.employee.ctc) }}</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">📈 Increment</span>
-                            <span class="info-value">
-                                {% if item.employee.increment_per_month and item.employee.increment_per_month > 0 %}
-                                    +₹{{ "{:,.0f}".format(item.employee.increment_per_month) }}
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">📅 Joined</span>
-                            <span class="info-value">
-                                {{ item.employee.joining_date.strftime('%d %b %Y') if item.employee.joining_date else 'N/A' }}
-                            </span>
-                        </div>
-                        
-                        <!-- Document Count -->
-                        <div class="text-center mt-3">
-                            <span class="document-badge">
-                                📄 {{ item.document_count }} Documents
-                            </span>
-                        </div>
-                        
-                        <!-- Action Buttons -->
+                        <div class="info-row"><span class="info-label">💼 Designation</span><span class="info-value">{{ item.employee.designation }}</span></div>
+                        <div class="info-row"><span class="info-label">💰 CTC</span><span class="info-value">₹{{ "{:,.0f}".format(item.employee.ctc) }}</span></div>
+                        <div class="info-row"><span class="info-label">📈 Increment</span><span class="info-value">{% if item.employee.increment_per_month and item.employee.increment_per_month > 0 %}+₹{{ "{:,.0f}".format(item.employee.increment_per_month) }}{% else %}-{% endif %}</span></div>
+                        <div class="info-row"><span class="info-label">📅 Joined</span><span class="info-value">{{ item.employee.joining_date.strftime('%d %b %Y') if item.employee.joining_date else 'N/A' }}</span></div>
+                        <div class="text-center mt-3"><span class="document-badge">📄 {{ item.document_count }} Documents</span></div>
                         <div class="mt-3">
                             <div class="row g-2">
-                                <div class="col-6">
-                                    <a href="{{ url_for('admin_dashboard', tab='document_generator', emp_id=item.employee.id) }}" 
-                                       class="btn action-btn btn-offer btn-sm w-100">
-                                        📄 Generate Docs
-                                    </a>
-                                </div>
-                                <div class="col-6">
-                                    <a href="{{ url_for('view_employee', emp_id=item.employee.id) }}" 
-                                       class="btn action-btn btn-secondary btn-sm w-100">
-                                        👁️ View
-                                    </a>
-                                </div>
+                                <div class="col-6"><a href="{{ url_for('admin_dashboard', tab='document_generator', emp_id=item.employee.id) }}" class="btn action-btn btn-offer btn-sm w-100">📄 Generate Docs</a></div>
+                                <div class="col-6"><a href="{{ url_for('view_employee', emp_id=item.employee.id) }}" class="btn action-btn btn-secondary btn-sm w-100">👁️ View</a></div>
                                 <div class="col-12">
-                                    <form action="{{ url_for('delete_employee', emp_id=item.employee.id) }}" 
-                                          method="POST" 
-                                          onsubmit="return confirm('Are you sure you want to delete this employee?');">
-                                        <button type="submit" class="btn action-btn btn-danger btn-sm w-100">
-                                            🗑️ Delete Employee
-                                        </button>
+                                    <form action="{{ url_for('delete_employee', emp_id=item.employee.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this employee?');">
+                                        <button type="submit" class="btn action-btn btn-danger btn-sm w-100">🗑️ Delete Employee</button>
                                     </form>
                                 </div>
                             </div>
@@ -923,12 +792,11 @@
         <!-- Document Generator Tab -->
         {% if active_tab == 'document_generator' %}
         <div class="employee-selector">
-            <h4 style="margin-bottom: 20px;">Step 1: Select Employee</h4>
+            <h4 style="margin-bottom:20px;">Step 1: Select Employee</h4>
             <div class="employee-list" id="employeeSelectList">
                 {% for item in employees %}
                 <div class="employee-select-item {% if selected_emp_id == item.employee.id %}selected{% endif %}" 
-                     onclick="selectEmployee('{{ item.employee.id }}')"
-                     data-id="{{ item.employee.id }}">
+                     onclick="selectEmployee('{{ item.employee.id }}')" data-id="{{ item.employee.id }}">
                     <h5>{{ item.employee.full_name }}</h5>
                     <p>{{ item.employee.designation }} | {{ item.employee.employee_id }}</p>
                     <small class="text-muted">CTC: ₹{{ "{:,.0f}".format(item.employee.ctc) }}</small>
@@ -939,28 +807,13 @@
 
         {% if selected_emp_id %}
         <div class="employee-selector">
-            <h4 style="margin-bottom: 20px;">Step 2: Select Document Type</h4>
+            <h4 style="margin-bottom:20px;">Step 2: Select Document Type</h4>
             <div class="document-type-grid">
-                <div class="document-type-card" data-emp-id="{{ selected_emp_id }}" onclick="generateDocument(this.dataset.empId, 'offer_letter')">
-                    <i class="fas fa-file-alt"></i>
-                    <h6>Offer Letter</h6>
-                </div>
-                <div class="document-type-card" data-emp-id="{{ selected_emp_id }}" onclick="generateDocument(this.dataset.empId, 'salary_slip')">
-                    <i class="fas fa-money-bill-wave"></i>
-                    <h6>Salary Slip</h6>
-                </div>
-                <div class="document-type-card" data-emp-id="{{ selected_emp_id }}" onclick="generateDocument(this.dataset.empId, 'experience_letter')">
-                    <i class="fas fa-graduation-cap"></i>
-                    <h6>Experience Letter</h6>
-                </div>
-                <div class="document-type-card" data-emp-id="{{ selected_emp_id }}" onclick="generateDocument(this.dataset.empId, 'increment_letter')">
-                    <i class="fas fa-chart-line"></i>
-                    <h6>Increment Letter</h6>
-                </div>
-                <div class="document-type-card" data-emp-id="{{ selected_emp_id }}" onclick="generateDocument(this.dataset.empId, 'relieving_letter')">
-                    <i class="fas fa-door-open"></i>
-                    <h6>Relieving Letter</h6>
-                </div>
+                <div class="document-type-card" data-emp-id="{{ selected_emp_id }}" onclick="generateDocument(this.dataset.empId, 'offer_letter')"><i class="fas fa-file-alt"></i><h6>Offer Letter</h6></div>
+                <div class="document-type-card" data-emp-id="{{ selected_emp_id }}" onclick="generateDocument(this.dataset.empId, 'salary_slip')"><i class="fas fa-money-bill-wave"></i><h6>Salary Slip</h6></div>
+                <div class="document-type-card" data-emp-id="{{ selected_emp_id }}" onclick="generateDocument(this.dataset.empId, 'experience_letter')"><i class="fas fa-graduation-cap"></i><h6>Experience Letter</h6></div>
+                <div class="document-type-card" data-emp-id="{{ selected_emp_id }}" onclick="generateDocument(this.dataset.empId, 'increment_letter')"><i class="fas fa-chart-line"></i><h6>Increment Letter</h6></div>
+                <div class="document-type-card" data-emp-id="{{ selected_emp_id }}" onclick="generateDocument(this.dataset.empId, 'relieving_letter')"><i class="fas fa-door-open"></i><h6>Relieving Letter</h6></div>
             </div>
         </div>
 
@@ -973,19 +826,15 @@
                 if (docType === 'salary_slip') {
                     window.location.href = "{{ url_for('admin_generate_document', emp_id=0, doc_type='salary_slip') }}".replace('0', empId);
                 } else {
-                    // For other documents, create and submit a form
                     const form = document.createElement('form');
                     form.method = 'POST';
                     form.action = "{{ url_for('admin_generate_document', emp_id=0, doc_type='') }}".replace('0', empId) + docType;
                     form.target = '_blank';
-                    
-                    // Add company selection (you might want to show a modal for this)
                     const companyInput = document.createElement('input');
                     companyInput.type = 'hidden';
                     companyInput.name = 'company';
-                    companyInput.value = 'company1'; // Default company
+                    companyInput.value = 'company1';
                     form.appendChild(companyInput);
-                    
                     document.body.appendChild(form);
                     form.submit();
                     document.body.removeChild(form);
@@ -995,104 +844,68 @@
         {% endif %}
         {% endif %}
 
-<!-- Payments Tab -->
-{% if active_tab == 'payments' %}
-<div class="payment-table">
-    <table>
-        <thead>
-            <tr>
-                <th>Employee</th>
-                <th>Document Type</th>
-                <th>Generated Date</th>
-                <th>Amount</th>
-                <th>Status</th>
-                <th>Due Date</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for payment in payments %}
-            <tr>
-                <td>
-                    <strong>{{ payment.employee_name }}</strong><br>
-                    <small>{{ payment.employee_id }}</small>
-                </td>
-                <td>{{ payment.document_type }}</td>
-                <td>{{ payment.generated_date }}</td>
-                <td>₹{{ "{:,.0f}".format(payment.amount) }}</td>
-                <td>
-                    <span class="payment-status payment-{{ payment.status_class }}">
-                        {{ payment.status }}
-                    </span>
-                </td>
-                <td>{{ payment.due_date }}</td>
-                <td>
-                    {% if payment.status != 'Paid' %}
-                    <button class="pay-btn" onclick="processPayment('{{ payment.id }}')">
-                        Mark as Paid
-                    </button>
+        <!-- Payments Tab -->
+        {% if active_tab == 'payments' %}
+        <div class="payment-table">
+            <table>
+                <thead>
+                    <tr><th>Employee</th><th>Document Type</th><th>Generated Date</th><th>Amount</th><th>Status</th><th>Due Date</th><th>Action</th></tr>
+                </thead>
+                <tbody>
+                    {% for payment in payments %}
+                    <tr>
+                        <td><strong>{{ payment.employee_name }}</strong><br><small>{{ payment.employee_id }}</small></td>
+                        <td>{{ payment.document_type }}</td>
+                        <td>{{ payment.generated_date }}</td>
+                        <td>₹{{ "{:,.0f}".format(payment.amount) }}</td>
+                        <td><span class="payment-status payment-{{ payment.status_class }}">{{ payment.status }}</span></td>
+                        <td>{{ payment.due_date }}</td>
+                        <td>{% if payment.status != 'Paid' %}<button class="pay-btn" onclick="processPayment('{{ payment.id }}')">Mark as Paid</button>{% else %}<button class="pay-btn" disabled>Paid</button>{% endif %}</td>
+                    </tr>
                     {% else %}
-                    <button class="pay-btn" disabled>Paid</button>
-                    {% endif %}
-                </td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="7" class="text-center">No payment records found</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                    <tr><td colspan="7" class="text-center">No payment records found</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
 </div>
-{% endif %}
 
-<!-- JavaScript for Filtering (Employee Dashboard) -->
+<!-- JavaScript for Filtering, Document Generator, Payments (unchanged) -->
 <script>
-
-        // ============= DOCUMENT GENERATOR FUNCTIONS =============
     function selectEmployee(empId) {
         window.location.href = "{{ url_for('admin_dashboard', tab='document_generator') }}" + "&emp_id=" + empId;
     }
 
     function generateDocument(empId, docType) {
         if (docType === 'salary_slip') {
-            // For salary slip, go to month selection page
             window.location.href = "{{ url_for('admin_generate_document', emp_id=0, doc_type='salary_slip') }}".replace('0', empId);
         } else {
-            // For other documents, create and submit a form (POST request)
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = "{{ url_for('admin_generate_document', emp_id=0, doc_type='') }}".replace('0', empId) + docType;
             form.target = '_blank';
-            
-            // Add company selection (default to company1)
             const companyInput = document.createElement('input');
             companyInput.type = 'hidden';
             companyInput.name = 'company';
             companyInput.value = 'company1';
             form.appendChild(companyInput);
-            
             document.body.appendChild(form);
             form.submit();
             document.body.removeChild(form);
         }
     }
-    
-    // Payment processing function
+
     function processPayment(paymentId) {
         if (confirm('Mark this payment as paid?')) {
             fetch('/admin/process-payment/' + paymentId, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
+                headers: { 'Content-Type': 'application/json' }
             })
             .then(response => {
-                if (response.ok) {
-                    location.reload();
-                } else {
-                    alert('Error processing payment');
-                }
+                if (response.ok) { location.reload(); }
+                else { alert('Error processing payment'); }
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -1101,51 +914,38 @@
         }
     }
 
-    // Filter functions
     function filterEmployees() {
         const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
         const statusFilter = document.getElementById('statusFilter')?.value || 'all';
         const departmentFilter = document.getElementById('departmentFilter')?.value.toLowerCase() || 'all';
-        
         const cards = document.querySelectorAll('.employee-card-wrapper');
-        
         cards.forEach(card => {
             const name = card.dataset.name;
             const empId = card.dataset.id;
             const designation = card.dataset.designation;
             const status = card.dataset.status;
             const department = card.dataset.department;
-            
-            const matchesSearch = searchTerm === '' || 
-                name.includes(searchTerm) || 
-                empId.includes(searchTerm) || 
-                designation.includes(searchTerm);
-            
+            const matchesSearch = searchTerm === '' || name.includes(searchTerm) || empId.includes(searchTerm) || designation.includes(searchTerm);
             const matchesStatus = statusFilter === 'all' || status === statusFilter;
             const matchesDepartment = departmentFilter === 'all' || department === departmentFilter;
-            
             card.style.display = (matchesSearch && matchesStatus && matchesDepartment) ? 'block' : 'none';
         });
     }
-    
+
     function resetFilters() {
         const searchInput = document.getElementById('searchInput');
         const statusFilter = document.getElementById('statusFilter');
         const departmentFilter = document.getElementById('departmentFilter');
-        
         if (searchInput) searchInput.value = '';
         if (statusFilter) statusFilter.value = 'all';
         if (departmentFilter) departmentFilter.value = 'all';
-        
         filterEmployees();
     }
-    
-    // Add event listeners when DOM is loaded
+
     document.addEventListener('DOMContentLoaded', function() {
         const searchInput = document.getElementById('searchInput');
         const statusFilter = document.getElementById('statusFilter');
         const departmentFilter = document.getElementById('departmentFilter');
-        
         if (searchInput) searchInput.addEventListener('keyup', filterEmployees);
         if (statusFilter) statusFilter.addEventListener('change', filterEmployees);
         if (departmentFilter) departmentFilter.addEventListener('change', filterEmployees);

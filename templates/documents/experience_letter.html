@@ -1,66 +1,176 @@
-<!-- Action Bar -->
+<!-- Action Bar (hidden in PDF) -->
 <div class="action-bar">
-    <!-- Print Button Only -->
-    <button type="button" class="print-btn" onclick="window.print()">
-        🖨️ Save as PDF
-    </button>
+    <div class="action-bar-container">
+        <!-- Download Button (local only) -->
+        <form action="{{ url_for('generate') }}" method="POST" class="action-form">
+            <input type="hidden" name="upload_to_drive" value="false">
+            <button type="submit" class="btn btn-primary">
+                <span class="btn-icon">📥</span>
+                <span class="btn-text">Download</span>
+            </button>
+        </form>
 
-    <!-- Cancel Button -->
-    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
-        ✖ Cancel
-    </a>
+        <!-- Download & Save to Drive -->
+        <form action="{{ url_for('generate') }}" method="POST" class="action-form">
+            <input type="hidden" name="upload_to_drive" value="true">
+            <button type="submit" class="btn btn-success">
+                <span class="btn-icon">☁️</span>
+                <span class="btn-text">Download & Save to Drive</span>
+            </button>
+        </form>
+
+        <!-- Print Button -->
+        <button type="button" class="btn btn-secondary" onclick="window.print()">
+            <span class="btn-icon">🖨️</span>
+            <span class="btn-text">Print</span>
+        </button>
+
+        <!-- Cancel Button -->
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-danger">
+            <span class="btn-icon">✕</span>
+            <span class="btn-text">Cancel</span>
+        </a>
+    </div>
 </div>
 
 <style>
+    /* Action bar styling – hidden in print */
     .action-bar {
-        max-width: 800px;
-        margin: 20px auto;
-        display: flex;
-        justify-content: flex-end;
+        background: white;
+        border-bottom: 1px solid #e9ecef;
+        padding: 15px 0;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
-
-    .print-btn {
-        background-color: #0d6efd;  /* Blue color */
-        color: white;
+    .action-bar-container {
+        max-width: 900px;
+        margin: 0 auto;
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        align-items: center;
+        padding: 0 20px;
+    }
+    .btn {
+        padding: 12px 24px;
         border: none;
-        padding: 10px 20px;
-        font-size: 16px;
+        border-radius: 8px;
+        font-size: 15px;
         font-weight: 600;
-        border-radius: 5px;
         cursor: pointer;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .btn-primary { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; }
+    .btn-success { background: linear-gradient(135deg, #1e7e34 0%, #28a745 100%); color: white; }
+    .btn-secondary { background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%); color: white; }
+    .btn-danger { background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%); color: white; }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+    .btn-icon { font-size: 18px; }
+    @media print { .action-bar { display: none !important; } }
+
+    /* PDF page settings */
+    @page {
+        size: A4;
+        margin: 2cm;
     }
 
-    .print-btn:hover {
-        background-color: #0b5ed7;
-        transform: translateY(-2px);
+    /* Experience letter styles – screen version (centered) */
+    .experience-letter {
+        font-family: 'Arial', sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 30px;
+        position: relative;
+        background-color: white;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+    .letter-header {
+        border-bottom: 2px solid #0d6efd;
+        padding-bottom: 20px;
+        margin-bottom: 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 3rem;
+    }
+    h2 {
+        text-align: center;
+        color: #0d6efd;
+        margin-bottom: 30px;
+    }
+    .content {
+        text-align: justify;
+        line-height: 1.8;
+        font-size: 15px;
+    }
+    .signature-section {
+        margin-top: 60px;
+    }
+    .footer-note {
+        margin-top: 40px;
+        border-top: 1px solid #e0e0e0;
+        padding-top: 10px;
+        font-size: 12px;
+        color: #777;
+        text-align: center;
     }
 
-    /* Hide button in print mode */
+    /* Watermark container (text version) */
+    .watermark-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        pointer-events: none;
+        z-index: 0;
+        color: #e5e8ec;
+        font-size: 120px;
+        font-weight: bold;
+        opacity: 0.1;
+        transform: rotate(-20deg);
+        white-space: nowrap;
+    }
+
+    /* Print styles – full width, no borders/shadows */
     @media print {
-        .action-bar {
-            display: none !important;
+        .experience-letter {
+            max-width: none;
+            margin: 0;
+            padding: 0;
+            border: none;
+            box-shadow: none;
+        }
+        .letter-header, .content, .signature-section, .footer-note {
+            width: 100%;
         }
     }
 </style>
 
-<div class="experience-letter" style="font-family: 'Arial', sans-serif; max-width: 800px; margin: 0 auto; padding: 30px; position: relative;">
-
-<!-- Watermarks logo background -->
-    {% include '_watermark.html' %}
+<div class="experience-letter">
+    <!-- Watermark (text, vector‑safe) -->
+    <div class="watermark-container">
+        {{ company.name }}
+    </div>
 
     <!-- Letterhead -->
-    <div class="letter-header mb-4" style="border-bottom: 2px solid #0d6efd; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; gap: 3rem;">
-        
-        <!-- Logo -->
+    <div class="letter-header">
         <div>
-            <img src="{{ url_for('static', filename='images/' + company.logo) }}" 
-                 alt="{{ company.name }} Logo" 
+            <img src="{{ request.url_root }}static/images/{{ company.logo }}"
+                 alt="{{ company.name }} Logo"
                  style="height: 140px; max-width: 350px; object-fit: contain;">
         </div>
-
-        <!-- Company Info -->
         <div style="text-align: left; font-size: 14px; color: #555;">
             <strong>Office:</strong> {{ company.address }}<br>
             <strong>Phone:</strong> {{ company.phone }}<br>
@@ -75,9 +185,7 @@
     </div>
 
     <!-- Title -->
-    <h2 style="text-align: center; color: #0d6efd; margin-bottom: 30px;">
-        EXPERIENCE CERTIFICATE
-    </h2>
+    <h2>EXPERIENCE CERTIFICATE</h2>
 
     <!-- Employee Info -->
     <div style="margin-bottom: 20px;">
@@ -86,14 +194,12 @@
     </div>
 
     <!-- Content -->
-    <div style="text-align: justify; line-height: 1.8; font-size: 15px;">
-
+    <div class="content">
         <p>
             This is to certify that <strong>{{ data.full_name|title }}</strong> was employed with 
             <strong>{{ company.name }}</strong> as a 
             <strong>{{ data.designation|title }}</strong>.
         </p>
-
         <p>
             The employee worked with us from 
             <strong>
@@ -112,50 +218,41 @@
                 {% endif %}
             </strong>.
         </p>
-
         <p>
             During the tenure of employment, {{ data.full_name.split()[0] }} demonstrated
             professionalism, dedication, and commitment towards assigned responsibilities.
             The employee efficiently handled duties related to the role and maintained
             good conduct and teamwork within the organization.
         </p>
-
         <p>
             We found {{ data.full_name.split()[0] }} to be sincere, hardworking,
             and a valuable contributor to the company. The services rendered
             were satisfactory during the period of employment.
         </p>
-
         <p>
             We wish {{ data.full_name.split()[0] }} all the very best for future
             professional endeavors.
         </p>
-
     </div>
 
     <!-- Signature -->
-    <div class="row mt-5" style="margin-top: 60px;">
-        <div class="col-md-6">
-
-            <div style="height: 80px; margin-bottom: 10px;">
-                {% if company.signature %}
-                    <img src="{{ url_for('static', filename='images/signatures/' + company.signature) }}" 
-                         alt="Authorized Signature" 
-                         style="height: 100px; max-width: 200px; object-fit: contain;">
-                {% endif %}
-            </div>
-
-            <p style="margin-bottom: 0;">
-                <strong>{{ company.hr_name }}</strong><br>
-                {{ company.hr_designation }}<br>
-                <strong>{{ company.name }}</strong>
-            </p>
+    <div class="signature-section">
+        <div style="height: 80px; margin-bottom: 10px;">
+            {% if company.signature %}
+                <img src="{{ request.url_root }}static/images/signatures/{{ company.signature }}"
+                     alt="Authorized Signature"
+                     style="height: 100px; max-width: 200px; object-fit: contain;">
+            {% endif %}
         </div>
+        <p style="margin-bottom: 0;">
+            <strong>{{ company.hr_name }}</strong><br>
+            {{ company.hr_designation }}<br>
+            <strong>{{ company.name }}</strong>
+        </p>
     </div>
 
     <!-- Footer Note -->
-    <div style="margin-top: 40px; border-top: 1px solid #e0e0e0; padding-top: 10px; font-size: 12px; color: #777; text-align: center;">
+    <div class="footer-note">
         *This is a system-generated document and does not require physical signature if digitally generated.
     </div>
-
 </div>
