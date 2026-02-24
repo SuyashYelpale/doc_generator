@@ -976,24 +976,46 @@ def setup_admin():
 def delete_employee(emp_id):
     if not session.get('is_admin'):
         return redirect(url_for('admin_login'))
-    
+
     employee = Employee.query.get_or_404(emp_id)
-    
+    drive_folder_id = employee.drive_folder_id  # main employee Drive folder
+
     try:
-        # Delete related documents first
-        Document.query.filter_by(employee_id=emp_id).delete()
-        
-        # Delete the employee
+        # Delete all related documents (and their Drive files)
+        for doc in employee.documents:
+            if doc.drive_file_id:
+                # Delete the file from Drive
+                parent_id = get_parent_folder_id(doc.drive_file_id)
+                delete_drive_file(doc.drive_file_id)
+                # Optionally delete parent folder if empty (might be redundant)
+                if parent_id and is_folder_empty(parent_id):
+                    delete_drive_folder(parent_id)
+
+            # Delete local file if exists
+            if doc.file_path and os.path.exists(doc.file_path):
+                try:
+                    os.remove(doc.file_path)
+                except Exception as e:
+                    print(f"Error deleting local file: {e}")
+
+        # After deleting all documents, delete the main employee folder (if exists and empty)
+        if drive_folder_id:
+            # Check if folder still has any files (documents might have been deleted above)
+            if is_folder_empty(drive_folder_id):
+                delete_drive_folder(drive_folder_id)
+            else:
+                print(f"Main folder {drive_folder_id} not empty, skipping deletion.")
+
+        # Now delete the employee (cascades to documents via DB)
         db.session.delete(employee)
         db.session.commit()
-        
-        flash(f'Employee {employee.full_name} deleted successfully!', 'success')
+
+        flash(f'Employee {employee.full_name} and all data deleted successfully!', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Error deleting employee: {str(e)}', 'danger')
-    
-    return redirect(url_for('admin_dashboard', tab='employees'))
 
+    return redirect(url_for('admin_dashboard', tab='employees'))
 #generate document for specific employee
 @app.route('/admin/employee/<int:emp_id>/generate/<doc_type>', methods=['GET', 'POST'])
 def admin_generate_document(emp_id, doc_type):
@@ -1452,6 +1474,7 @@ def get_drive_service():
     return service, None
 
 def upload_file_to_drive(file_path, filename, folder_name=None, employee=None):
+
     service, error = get_drive_service()
     if error:
         raise Exception("Google Drive not connected. Please connect first.")
@@ -1531,6 +1554,96 @@ def upload_file_to_drive(file_path, filename, folder_name=None, employee=None):
         print("❌ Exception in upload_file_to_drive:")
         traceback.print_exc()
         raise Exception(f"Drive upload failed: {str(e)}")
+    
+def delete_drive_file(file_id):
+    """Delete a file from Google Drive by its ID."""
+    service, error = get_drive_service()
+    if error:
+        print(f"Drive service error: {error}")
+        return False
+    try:
+        service.files().delete(fileId=file_id).execute()
+        print(f"Deleted Drive file {file_id}")
+        return True
+    except Exception as e:
+        print(f"Error deleting Drive file {file_id}: {e}")
+        return False
+
+def get_parent_folder_id(file_id):
+    """Return the ID of the parent folder of a given file."""
+    service, error = get_drive_service()
+    if error:
+        return None
+    try:
+        file = service.files().get(fileId=file_id, fields='parents').execute()
+        parents = file.get('parents', [])
+        return parents[0] if parents else None
+    except Exception as e:
+        print(f"Error getting parent for {file_id}: {e}")
+        return None
+
+def is_folder_empty(folder_id):
+    """Check if a Drive folder has any files/folders inside (excluding trashed)."""
+    service, error = get_drive_service()
+    if error:
+        return False
+    try:
+        # List items inside the folder
+        query = f"'{folder_id}' in parents and trashed=false"
+        response = service.files().list(q=query, fields='files(id)').execute()
+        files = response.get('files', [])
+        return len(files) == 0
+    except Exception as e:
+        print(f"Error checking folder {folder_id}: {e}")
+        return False
+
+def delete_drive_folder(folder_id):
+    """Delete a Drive folder by its ID (folder must be empty)."""
+    service, error = get_drive_service()
+    if error:
+        return False
+    try:
+        service.files().delete(fileId=folder_id).execute()
+        print(f"Deleted Drive folder {folder_id}")
+        return True
+    except Exception as e:
+        print(f"Error deleting folder {folder_id}: {e}")
+        return False
+
+@app.route('/admin/document/<int:doc_id>/delete', methods=['POST'])
+def delete_document(doc_id):
+    if not session.get('is_admin'):
+        return "Unauthorized", 403
+
+    doc = Document.query.get_or_404(doc_id)
+    employee = doc.employee
+    drive_file_id = doc.drive_file_id
+    file_path = doc.file_path
+
+    # 1. Delete local file
+    if file_path and os.path.exists(file_path):
+        try:
+            os.remove(file_path)
+        except Exception as e:
+            print(f"Error deleting local file: {e}")
+
+    # 2. Delete from Drive if we have a file ID
+    if drive_file_id:
+        # Get parent folder before deleting the file
+        parent_id = get_parent_folder_id(drive_file_id)
+        delete_drive_file(drive_file_id)
+
+        # If parent folder is now empty, delete it
+        if parent_id and is_folder_empty(parent_id):
+            delete_drive_folder(parent_id)
+
+    # 3. Remove database record
+    db.session.delete(doc)
+    db.session.commit()
+
+    flash('Document deleted successfully!', 'success')
+    return redirect(url_for('view_employee', emp_id=employee.id))
+
 # ==================== GOOGLE DRIVE AUTHENTICATION ROUTES ====================
 
 @app.route('/authorize')
