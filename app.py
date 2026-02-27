@@ -24,6 +24,7 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 import pickle
 import uuid
+from num2words import num2words
 
 app = Flask(__name__)
 app.secret_key = "super-secret-key"
@@ -217,9 +218,6 @@ def convert_dates(form_data):
 
 def get_watermark_logo(company_id):
     """Return watermark logo filename based on company ID"""
-    # Debug print to see what company_id is being passed
-    print(f"Company ID received: {company_id}")
-    
     # Map your actual company IDs from config.py to logo filenames
     watermarks = {
         'company1': 'lc_logo.png',      # Map company1 to lc_logo.png
@@ -227,7 +225,6 @@ def get_watermark_logo(company_id):
     }
     
     watermark = watermarks.get(company_id, 'lc_logo.png')  # Default to lc_logo.png
-    print(f"Watermark logo selected: {watermark}")
     return watermark
 
 def generate_pdf_file(form_data, company, doc_type):
@@ -314,25 +311,21 @@ def index():
 @app.route('/preview')
 def preview():
     form_data = session.get('form_data', {})
+    selected_months = session.get('selected_months', [])
+    per_month_values = session.get('per_month_values', {})
 
-    print("relieving_date in form_data:", form_data.get('relieving_date')) 
-    
-    # Set defaults if missing
     if 'document_type' not in form_data:
         flash('Document type is missing!', 'danger')
         return redirect(url_for('admin_dashboard'))
 
     if 'company' not in form_data or not form_data['company']:
-        form_data['company'] = 'company1'  # Default to company1 if not provided
-    
-    selected_months = session.get('selected_months', [])
+        form_data['company'] = 'company1'
+
     if not form_data:
         return redirect(url_for('index'))
 
-    # Convert string dates to date objects for calculations
     form_data = convert_dates(form_data)
 
-    # Calculate date_before if joining_date exists
     if form_data.get('joining_date'):
         date_before = get_previous_workday(form_data['joining_date'], 8)
         form_data['date_before'] = date_before
@@ -341,11 +334,30 @@ def preview():
     if not company:
         return "Company not found", 404
 
-    ctc = float(form_data.get('ctc') or 0)
-    # increment_per_month no longer used in salary breakdown for preview? 
-    # For increment letter, we will have a separate amount in form_data
-    increment_per_month = float(form_data.get('increment_per_month', 0))
+    # Determine which month to preview
+    preview_month = request.args.get('month')
+    if preview_month and preview_month in selected_months:
+        pass
+    elif selected_months:
+        preview_month = selected_months[0]
+    else:
+        preview_month = None
 
+    # Apply per‑month values for the selected preview month
+    if form_data.get('document_type') == 'salary_slip' and preview_month:
+        form_data['month'] = preview_month
+        pm = per_month_values.get(preview_month, {})
+        form_data['worked_days'] = pm.get('worked', form_data.get('worked_days', 30))
+        form_data['lop'] = pm.get('lop', form_data.get('lop', 0))
+        form_data['paid_days'] = pm.get('paid', form_data.get('paid_days', 30))
+        form_data['preview_month'] = preview_month
+    else:
+        # For non‑salary slips, month is irrelevant
+        form_data['month'] = None
+
+    # Salary calculations (standard for all document types)
+    ctc = float(form_data.get('ctc') or 0)
+    increment_per_month = float(form_data.get('increment_per_month', 0))
     monthly_ctc = round(ctc / 12)
     monthly_ctc_after_increment = monthly_ctc + increment_per_month
 
@@ -354,42 +366,30 @@ def preview():
     conveyance = round(monthly_ctc_after_increment * 0.05)
     medical = round(monthly_ctc_after_increment * 0.014)
     telephone = round(monthly_ctc_after_increment * 0.02)
-
-    special_allowance = monthly_ctc_after_increment - (
-        basic + hra + conveyance + medical + telephone
-    )
-
+    special_allowance = monthly_ctc_after_increment - (basic + hra + conveyance + medical + telephone)
     professional_tax = 200
     gross_salary = basic + hra + conveyance + medical + telephone + special_allowance
     net_salary = gross_salary - professional_tax
 
     form_data['salary_breakdown'] = {
-        'basic': basic,
-        'hra': hra,
-        'conveyance': conveyance,
-        'medical': medical,
-        'telephone': telephone,
-        'special_allowance': special_allowance,
-        'professional_tax': professional_tax,
-        'gross_salary': gross_salary,
-        'net_salary': net_salary,
+        'basic': basic, 'hra': hra, 'conveyance': conveyance,
+        'medical': medical, 'telephone': telephone,
+        'special_allowance': special_allowance, 'professional_tax': professional_tax,
+        'gross_salary': gross_salary, 'net_salary': net_salary,
         'increment_per_month': increment_per_month
     }
-
     form_data['monthly_ctc_after_increment'] = monthly_ctc_after_increment
-
-    # Format dates for display using the safe format_date function
     form_data['formatted_joining_date'] = format_date(form_data.get('joining_date'))
-    
-    employee = Employee.query.filter_by(employee_id=form_data.get('employee_id')).first()
-    if employee:
-        form_data['formatted_resignation_date'] = format_date(employee.resignation_date)
-        form_data['relieving_date'] = format_date(employee.relieving_date)
+
+    emp = Employee.query.filter_by(employee_id=form_data.get('employee_id')).first()
+    if emp:
+        form_data['formatted_resignation_date'] = format_date(emp.resignation_date)
+        form_data['relieving_date'] = format_date(emp.relieving_date)
     else:
         form_data['formatted_resignation_date'] = None
         form_data['relieving_date'] = None
 
-    # Build month label for preview when applicable
+    # Build month label list (used by other document types, kept for compatibility)
     month_label = []
     if form_data.get('document_type') in ['salary_slip', 'offer_and_salary'] and selected_months:
         current_year = session.get('selected_year', datetime.now().year)
@@ -398,18 +398,7 @@ def preview():
             m = m[:1].upper() + m[1:].lower()
             month_label.append(f"{m} {current_year}")
 
-    # Determine watermark logo based on company
     watermark_logo = get_watermark_logo(company['id'])
-
-    if form_data.get('document_type') == 'offer_and_salary':
-        return render_template(
-            'documents/offer_letter.html',
-            data=form_data,
-            company=company,
-            months=selected_months,
-            month=month_label,
-            watermark_logo=watermark_logo
-        )
 
     template = f"documents/{form_data['document_type']}.html"
     return render_template(
@@ -531,36 +520,31 @@ def generate():
     if not form_data:
         return redirect(url_for('index'))
 
-    # ✅ Safe upload flag (NO name conflict)
     upload_to_drive_flag = request.form.get('upload_to_drive') == 'true'
-
     doc_type = form_data.get('document_type')
 
-    print("=" * 50)
-    print("GENERATE ROUTE STARTED")
-    print(f"Document type: {doc_type}")
-    print(f"Upload to Drive: {upload_to_drive_flag}")
-    print("=" * 50)
+    print(f"\n{'='*50}")
+    print(f"GENERATE ROUTE STARTED for {doc_type}")
+    print(f"Selected months: {selected_months}")
+    print(f"{'='*50}")
 
     form_data = convert_dates(form_data)
 
-    # -------------------------
-    # FIND EMPLOYEE
-    # -------------------------
+    # ------------------------- FIND EMPLOYEE -------------------------
     employee = None
     if 'employee_id' in form_data:
-        employee = Employee.query.filter_by(
-            employee_id=form_data.get('employee_id')
-        ).first()
+        employee = Employee.query.filter_by(employee_id=form_data.get('employee_id')).first()
+
+    if not employee:
+        flash('Employee not found', 'danger')
+        return redirect(url_for('admin_dashboard'))
 
     employee_id = secure_filename(form_data.get('employee_id', 'unknown'))
     base_folder = os.path.join(app.config['UPLOAD_FOLDER'], "employee_documents")
     employee_folder = os.path.join(base_folder, employee_id)
     os.makedirs(employee_folder, exist_ok=True)
 
-    # -------------------------
-    # SALARY CALCULATION
-    # -------------------------
+    # ------------------------- BASE SALARY CALCULATION -------------------------
     ctc = float(form_data.get('ctc') or 0)
     increment_per_month = float(form_data.get('increment_per_month') or 0)
 
@@ -572,90 +556,96 @@ def generate():
     conveyance = round(monthly_ctc_after_increment * 0.05)
     medical = round(monthly_ctc_after_increment * 0.014)
     telephone = round(monthly_ctc_after_increment * 0.02)
-
-    special_allowance = monthly_ctc_after_increment - (
-        basic + hra + conveyance + medical + telephone
-    )
-
+    special_allowance = monthly_ctc_after_increment - (basic + hra + conveyance + medical + telephone)
     professional_tax = 200
-
     gross_salary = basic + hra + conveyance + medical + telephone + special_allowance
     net_salary = gross_salary - professional_tax
 
+    # Store base values
+    form_data['basic'] = basic
+    form_data['hra'] = hra
+    form_data['conveyance'] = conveyance
+    form_data['medical'] = medical
+    form_data['telephone'] = telephone
+    form_data['special_allowance'] = special_allowance
+    form_data['professional_tax'] = professional_tax
+    form_data['gross_earnings'] = gross_salary
+    form_data['gross_deductions'] = professional_tax
+    form_data['net_salary'] = net_salary
     form_data['salary_breakdown'] = {
-        'basic': basic,
-        'hra': hra,
-        'conveyance': conveyance,
-        'medical': medical,
-        'telephone': telephone,
-        'special_allowance': special_allowance,
-        'professional_tax': professional_tax,
-        'gross_salary': gross_salary,
-        'net_salary': net_salary,
+        'basic': basic, 'hra': hra, 'conveyance': conveyance,
+        'medical': medical, 'telephone': telephone,
+        'special_allowance': special_allowance, 'professional_tax': professional_tax,
+        'gross_salary': gross_salary, 'net_salary': net_salary,
         'increment_per_month': increment_per_month
     }
-
-    form_data['net_salary'] = net_salary
     form_data['monthly_ctc_after_increment'] = monthly_ctc_after_increment
+    form_data['formatted_joining_date'] = format_date(form_data.get('joining_date'))
 
-    # -------------------------
-    # DATE FORMATTING
-    # -------------------------
-    form_data['formatted_joining_date'] = format_date(
-        form_data.get('joining_date')
-    )
-
-    employee = Employee.query.filter_by(employee_id=form_data.get('employee_id')).first()
-    if employee:
-        form_data['formatted_resignation_date'] = format_date(employee.resignation_date)
-        form_data['relieving_date'] = format_date(employee.relieving_date)
+    emp = Employee.query.filter_by(employee_id=form_data.get('employee_id')).first()
+    if emp:
+        form_data['formatted_resignation_date'] = format_date(emp.resignation_date)
+        form_data['relieving_date'] = format_date(emp.relieving_date)
     else:
         form_data['formatted_resignation_date'] = None
         form_data['relieving_date'] = None
 
-    company = next(
-        (c for c in COMPANIES if c['id'] == form_data.get('company')),
-        None
-    )
+    company = next((c for c in COMPANIES if c['id'] == form_data.get('company')), None)
+    if not company:
+        flash('Company not found', 'danger')
+        return redirect(url_for('admin_dashboard'))
 
-    watermark_logo = get_watermark_logo(company['id']) if company else 'lc_logo.png'
+    watermark_logo = get_watermark_logo(company['id'])
 
-    # -------------------------
-    # CHECK PENDING INCREMENT
-    # -------------------------
+    # ------------------------- PENDING INCREMENT -------------------------
     should_update_increment = False
     pending = None
-
     if doc_type == 'increment_letter' and 'pending_increment' in session:
         should_update_increment = True
         pending = session['pending_increment']
 
-    # ======================================================
-    # ✅ SALARY SLIP (MULTIPLE MONTHS) – UPLOAD ONLY, NO ZIP
-    # ======================================================
-    if doc_type == "salary_slip" and selected_months:
+    # Retrieve per‑month values from session
+    per_month_values = session.get('per_month_values', {})
+    print(f"Per‑month values from session: {per_month_values}")
 
+    # ==================== SALARY SLIP (multiple months) ====================
+    if doc_type == "salary_slip" and selected_months:
         uploaded_files = []
-        files_generated = False
+        files_generated = []
+        failed_months = []
 
         for month in selected_months:
+            print(f"\n--- Processing month: {month} ---")
             form_data_copy = form_data.copy()
             form_data_copy['month'] = month
+
+            # Override with per‑month day values
+            pm = per_month_values.get(month, {})
+            form_data_copy['worked_days'] = pm.get('worked', form_data.get('worked_days', 30))
+            form_data_copy['lop'] = pm.get('lop', form_data.get('lop', 0))
+            form_data_copy['paid_days'] = pm.get('paid', form_data.get('paid_days', 30))
+
+            print(f"  worked_days={form_data_copy['worked_days']}, lop={form_data_copy['lop']}, paid_days={form_data_copy['paid_days']}")
+
+            # Generate amount in words
+            from num2words import num2words
+            words = num2words(int(form_data_copy['net_salary']), lang='en_IN').title() + ' Rupees'
+            form_data_copy['words'] = words
 
             html = render_template(
                 "documents/salary_slip.html",
                 data=form_data_copy,
                 company=company,
-                watermark_logo=watermark_logo,
-                months = selected_months,
+                watermark_logo=watermark_logo
             )
 
             filename = f"Salary_Slip_{month}.pdf"
             filepath = os.path.join(employee_folder, filename)
 
+            print(f"  Attempting to generate PDF: {filename}")
             if html_to_pdf(html, filepath):
-                files_generated = True
-
+                print(f"  ✅ PDF generated successfully")
+                files_generated.append(month)
                 if employee:
                     doc = Document(
                         employee_id=employee.id,
@@ -669,7 +659,6 @@ def generate():
                     db.session.add(doc)
                     db.session.flush()
 
-                    # ✅ Upload to Drive
                     if upload_to_drive_flag and employee:
                         try:
                             drive_file_id = upload_file_to_drive(
@@ -680,32 +669,37 @@ def generate():
                             )
                             doc.drive_file_id = drive_file_id
                             uploaded_files.append(filename)
+                            print(f"  ✅ Uploaded to Drive")
                         except Exception as e:
-                            print("Drive Upload Error:", e)
+                            print(f"  ❌ Drive upload error: {e}")
                             flash(f'{filename} upload failed', 'warning')
+            else:
+                print(f"  ❌ PDF generation FAILED")
+                failed_months.append(month)
 
         if files_generated:
             db.session.commit()
+            print(f"\n✅ Successfully generated {len(files_generated)} salary slips")
+            if failed_months:
+                print(f"❌ Failed months: {failed_months}")
 
             # Clear session data
             session.pop('form_data', None)
             session.pop('selected_months', None)
             session.pop('selected_year', None)
+            session.pop('per_month_values', None)
 
             if upload_to_drive_flag and uploaded_files:
                 flash(f'{len(uploaded_files)} salary slips uploaded to Drive!', 'success')
             else:
-                flash('Salary slips generated successfully!', 'success')
+                flash(f'{len(files_generated)} salary slips generated successfully!', 'success')
 
-            return redirect(url_for('admin_dashboard'))   # <-- No file download, just redirect
+            return redirect(url_for('admin_dashboard'))
 
-        flash('Failed to generate salary slips', 'danger')
+        flash('Failed to generate any salary slips', 'danger')
         return redirect(url_for('admin_dashboard'))
 
-    # ======================================================
-    # ✅ OTHER DOCUMENTS
-    # ======================================================
-
+    # ==================== OTHER DOCUMENTS ====================
     html = render_template(
         f"documents/{doc_type}.html",
         data=form_data,
@@ -720,9 +714,7 @@ def generate():
         flash('Failed to generate PDF', 'danger')
         return redirect(url_for('admin_dashboard'))
 
-    # -------------------------
-    # UPDATE INCREMENT
-    # -------------------------
+    # ------------------------- UPDATE INCREMENT -------------------------
     if should_update_increment and employee and pending:
         try:
             old_ctc = employee.ctc
@@ -734,22 +726,16 @@ def generate():
                 old_ctc=old_ctc,
                 increment_amount=increment_amount,
                 new_ctc=new_ctc,
-                effective_date=datetime.strptime(
-                    pending['effective_date'], '%Y-%m-%d'
-                ).date() if pending['effective_date'] else None,
+                effective_date=datetime.strptime(pending['effective_date'], '%Y-%m-%d').date() if pending['effective_date'] else None,
                 generated_by=session.get('admin_username', 'system')
             )
-
             db.session.add(history)
             session.pop('pending_increment', None)
-
         except Exception as e:
             print("Increment Update Error:", e)
             db.session.rollback()
 
-    # -------------------------
-    # SAVE DOCUMENT RECORD
-    # -------------------------
+    # ------------------------- SAVE DOCUMENT RECORD -------------------------
     if employee:
         doc = Document(
             employee_id=employee.id,
@@ -761,7 +747,6 @@ def generate():
         db.session.add(doc)
         db.session.flush()
 
-        # ✅ SAFE DRIVE UPLOAD (updated to pass employee object)
         if upload_to_drive_flag and employee:
             try:
                 folder_map = {
@@ -770,32 +755,26 @@ def generate():
                     'increment_letter': 'Increment Letters',
                     'relieving_letter': 'Relieving Letters'
                 }
-
                 folder_name = folder_map.get(doc_type, 'Other Documents')
-
                 drive_file_id = upload_file_to_drive(
                     file_path=filepath,
                     filename=filename,
                     folder_name=folder_name,
-                    employee=employee   # pass the employee object
+                    employee=employee
                 )
-
                 doc.drive_file_id = drive_file_id
                 flash('Document uploaded to Drive successfully!', 'success')
-
             except Exception as e:
                 print("Drive Upload Error:", e)
                 flash('Drive upload failed', 'warning')
 
     db.session.commit()
-
     session.pop('form_data', None)
     session.pop('selected_months', None)
     session.pop('selected_year', None)
 
     flash(f'{doc_type.replace("_", " ").title()} generated successfully!', 'success')
 
-    # Use send_file with absolute path
     if os.path.exists(filepath):
         return send_file(filepath, as_attachment=True, download_name=filename, mimetype='application/pdf')
     else:
@@ -1126,13 +1105,34 @@ def admin_generate_document(emp_id, doc_type):
         session['form_data'] = form_data
         return redirect(url_for('preview'))
 
-    # Handle months selection for salary slip
+    # ===== Salary Slip =====
     if doc_type == 'salary_slip' and request.method == 'POST':
         company_id = request.form.get('company', 'company1')
         selected_months = request.form.getlist('months')
         worked_days = int(request.form.get('worked_days', 30))
         lop = int(request.form.get('lop', 0))
         paid_days = int(request.form.get('paid_days', 30))
+
+        # Collect per‑month values if they exist
+        per_month_values = {}
+        for month in selected_months:
+            month_key = month.lower()
+            if f'worked_days_{month_key}' in request.form:
+                per_month_values[month] = {
+                    'worked': int(request.form.get(f'worked_days_{month_key}')),
+                    'lop': int(request.form.get(f'lop_{month_key}')),
+                    'paid': int(request.form.get(f'paid_days_{month_key}'))
+                }
+            else:
+                # Use global values
+                per_month_values[month] = {
+                    'worked': worked_days,
+                    'lop': lop,
+                    'paid': paid_days
+                }
+
+        # Store per_month_values in session for later use in generate
+        session['per_month_values'] = per_month_values
 
         if not selected_months:
             flash('Please select at least one month.', 'danger')
@@ -1158,6 +1158,9 @@ def admin_generate_document(emp_id, doc_type):
         gross_salary = basic + hra + conveyance + medical + telephone + special_allowance
         net_salary = gross_salary - professional_tax
 
+        # Generate amount in words (Indian format)
+        words = num2words(int(net_salary), lang='en_IN').title() + ' Rupees'
+
         # Build form_data with all required top-level keys
         form_data = {
             'employee_id': employee.employee_id,
@@ -1168,8 +1171,8 @@ def admin_generate_document(emp_id, doc_type):
             'aadhar_no': employee.aadhar_no,
             'pan_no': employee.pan_no,
             'designation': employee.designation,
-            'gender': employee.gender,                    # <-- from employee
-            'department': employee.department,            # <-- from employee
+            'gender': employee.gender,
+            'department': employee.department,
             'base_ctc': employee.base_ctc,
             'ctc': employee.ctc,
             'increment_per_month': 0,
@@ -1183,6 +1186,7 @@ def admin_generate_document(emp_id, doc_type):
             'gross_earnings': gross_salary,
             'gross_deductions': professional_tax,
             'net_salary': net_salary,
+            'words': words,
             'worked_days': worked_days,
             'lop': lop,
             'paid_days': paid_days,
@@ -1198,16 +1202,13 @@ def admin_generate_document(emp_id, doc_type):
         }
         session['form_data'] = form_data
         return redirect(url_for('preview'))
-    # ------------------------------------------------------------------
+
     # GET request - show options for salary slip
-    # ------------------------------------------------------------------
     if doc_type == 'salary_slip':
         return render_template('select_months.html', employee=employee, companies=COMPANIES)
 
     # ------------------------------------------------------------------
     # Fallback for all other documents (GET request)
-    # (This will also handle documents like offer_letter, experience_letter,
-    #  relieving_letter, and any other doc_type not caught above.)
     # ------------------------------------------------------------------
     ctc = float(employee.ctc)
     monthly_ctc = round(ctc / 12)
@@ -1388,7 +1389,7 @@ def add_employee():
         db.session.add(employee)
         db.session.flush()  # Flush to get employee.id for employee_id generation
         #set employee id
-        employee.employee_id = f"LC{100+employee.id}"
+        employee.employee_id = f"LC{1003+employee.id}"
         db.session.commit()
         
         flash('Employee added successfully!', 'success')
@@ -1531,10 +1532,6 @@ def save_resignation_details(emp_id):
 
         db.session.commit()
 
-        print("✅ Saved resignation and relieving date")
-        print("Resignation:", employee.resignation_date)
-        print("Relieving:", employee.relieving_date)
-
         flash('Resignation details saved successfully.', 'success')
 
     except Exception as e:
@@ -1583,9 +1580,7 @@ def upload_file_to_drive(file_path, filename, folder_name=None, employee=None):
         emp_id = employee.employee_id if employee else "unknown"
         emp_name = employee.full_name if employee else "Unknown"
         main_folder_name = f"{emp_id}_{emp_name.replace(' ', '_')}" if employee else "Documents"
-        print(f"🔍 Step 1: main_folder_name = {main_folder_name}")
 
-        print("🔍 Step 2: Checking if employee folder exists...")
         response = service.files().list(
             q=f"name='{main_folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false",
             spaces='drive',
@@ -1594,24 +1589,19 @@ def upload_file_to_drive(file_path, filename, folder_name=None, employee=None):
         folders = response.get('files', [])
         if folders:
             parent_folder_id = folders[0]['id']
-            print(f"   Existing folder ID: {parent_folder_id}")
         else:
-            print("   Creating new employee folder...")
             file_metadata = {
                 'name': main_folder_name,
                 'mimeType': 'application/vnd.google-apps.folder'
             }
             folder = service.files().create(body=file_metadata, fields='id').execute()
             parent_folder_id = folder.get('id')
-            print(f"   New folder ID: {parent_folder_id}")
             # Save folder ID to employee record
             if employee:
                 employee.drive_folder_id = parent_folder_id
                 db.session.commit()
-                print("   Saved folder ID to employee record.")
 
         if folder_name:
-            print(f"🔍 Step 3: Checking if subfolder '{folder_name}' exists...")
             response = service.files().list(
                 q=f"name='{folder_name}' and '{parent_folder_id}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false",
                 spaces='drive',
@@ -1620,9 +1610,7 @@ def upload_file_to_drive(file_path, filename, folder_name=None, employee=None):
             subfolders = response.get('files', [])
             if subfolders:
                 target_folder_id = subfolders[0]['id']
-                print(f"   Existing subfolder ID: {target_folder_id}")
             else:
-                print("   Creating new subfolder...")
                 file_metadata = {
                     'name': folder_name,
                     'mimeType': 'application/vnd.google-apps.folder',
@@ -1630,11 +1618,9 @@ def upload_file_to_drive(file_path, filename, folder_name=None, employee=None):
                 }
                 subfolder = service.files().create(body=file_metadata, fields='id').execute()
                 target_folder_id = subfolder.get('id')
-                print(f"   New subfolder ID: {target_folder_id}")
         else:
             target_folder_id = parent_folder_id
 
-        print(f"🔍 Step 4: Uploading file to folder {target_folder_id}...")
         file_metadata = {
             'name': filename,
             'parents': [target_folder_id]
@@ -1646,7 +1632,6 @@ def upload_file_to_drive(file_path, filename, folder_name=None, employee=None):
             fields='id, webViewLink'
         ).execute()
         file_id = file.get('id')
-        print(f"✅ Upload successful! File ID: {file_id}")
         return file_id
 
     except Exception as e:
