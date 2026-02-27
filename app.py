@@ -925,17 +925,27 @@ def admin_dashboard():
                          overdue_amount=overdue_amount,
                          payments=payments)
 
-# Setup first admin (run once)
-@app.route('/admin/setup')
-def setup_admin():
-    # Check if any admin exists
-    if Admin.query.first() is None:
-        admin = Admin(username='admin')
-        admin.set_password('admin123')  # Change this in production!
-        db.session.add(admin)
-        db.session.commit()
-        return "Admin created! Username: admin, Password: admin123"
-    return "Admin already exists"
+@app.route('/admin/profile', methods=['GET', 'POST'])
+def admin_profile():
+    if not session.get('is_admin'):
+        return redirect(url_for('admin_login'))
+    admin = Admin.query.get(session['admin_id'])
+    if request.method == 'POST':
+        current = request.form.get('current_password')
+        new = request.form.get('new_password')
+        confirm = request.form.get('confirm_password')
+        if not admin.check_password(current):
+            flash('Current password is incorrect', 'danger')
+        elif new != confirm:
+            flash('New passwords do not match', 'danger')
+        elif len(new) < 6:
+            flash('Password must be at least 6 characters', 'danger')
+        else:
+            admin.set_password(new)
+            db.session.commit()
+            flash('Password updated successfully', 'success')
+            return redirect(url_for('admin_profile'))
+    return render_template('admin_profile.html', admin=admin)
 
 @app.route('/admin/employee/<int:emp_id>/delete', methods=['POST'])
 def delete_employee(emp_id):
@@ -1815,7 +1825,18 @@ def utility_processor():
     
     return dict(check_drive_connection=check_drive_connection)
 
+# Create default admin if none exists
+with app.app_context():
+    if Admin.query.first() is None:
+        default_admin = Admin(username='admin')
+        default_admin.set_password('admin123')
+        db.session.add(default_admin)
+        db.session.commit()
+        print("Default admin created: username='admin', password='admin123'")
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(debug=True)
+
+    
