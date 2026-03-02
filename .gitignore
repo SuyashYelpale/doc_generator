@@ -11,3 +11,4 @@ tokens/
 generated_docs/
 *.pdf
 employee_documents/
+.env
