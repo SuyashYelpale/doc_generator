@@ -1755,16 +1755,23 @@ def utility_processor():
 
 # Create default admin if none exists
 with app.app_context():
-    if Admin.query.first() is None:
-        default_admin = Admin(username='admin')
-        default_admin.set_password('admin123')
-        db.session.add(default_admin)
-        db.session.commit()
-        print("Default admin created: username='admin', password='admin123'")
+    try:
+        # Create all tables first
+        print("🔄 Creating database tables...")
+        db.create_all()
+        print("✅ Database tables created successfully!")
+        
+        # Then check/create admin
+        if Admin.query.first() is None:
+            default_admin = Admin(username='admin')
+            default_admin.set_password('admin123')
+            db.session.add(default_admin)
+            db.session.commit()
+            print("✅ Default admin created: username='admin', password='admin123'")
+    except Exception as e:
+        print(f"❌ Database setup error: {e}")
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     app.run(debug=True)
 
     
